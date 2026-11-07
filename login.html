@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CourseQA · 登录</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { font-family: "Microsoft YaHei", system-ui, sans-serif; }
+        .captcha-box {
+            flex-shrink: 0; width: 88px; height: 44px; border-radius: 0.75rem;
+            cursor: pointer; border: 1.5px solid #c4b5fd;
+            background: linear-gradient(135deg, #ede9fe, #ddd6fe);
+        }
+        @keyframes shake {
+            0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)}
+        }
+        .shake { animation: shake 0.35s ease; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-600 mb-1">CourseQA</h1>
+            <p class="text-gray-500">课程智能问答辅助系统</p>
+        </div>
+
+        <!-- Tab 切换 -->
+        <div class="bg-white rounded-3xl shadow-xl p-8">
+            <div class="flex bg-gray-100 rounded-2xl p-1 mb-8">
+                <button id="tab-login" onclick="showTab('login')"
+                    class="flex-1 py-2 rounded-xl text-sm font-medium transition-all bg-white shadow text-blue-600">
+                    登录
+                </button>
+                <button id="tab-register" onclick="showTab('register')"
+                    class="flex-1 py-2 rounded-xl text-sm font-medium transition-all text-gray-500">
+                    注册
+                </button>
+            </div>
+
+            <!-- 登录表单 -->
+            <div id="form-login">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                        <input id="login-username" type="text" placeholder="请输入用户名"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                        <input id="login-password" type="password" placeholder="请输入密码"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">验证码</label>
+                        <div class="flex gap-2">
+                            <input id="login-captcha" type="text" placeholder="请输入验证码" maxlength="4"
+                                class="flex-1 px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500 tracking-widest uppercase">
+                            <canvas id="login-captcha-box" class="captcha-box" title="点击刷新" onclick="refreshCaptcha('login')"></canvas>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1 text-right">
+                            <button type="button" onclick="refreshCaptcha('login')" class="hover:text-blue-500 transition-colors">
+                                <i class="fas fa-rotate-right text-[10px] mr-0.5"></i>换一张
+                            </button>
+                        </p>
+                    </div>
+                    <p id="login-error" class="text-red-500 text-sm hidden"></p>
+                    <button onclick="doLogin()"
+                        class="w-full py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium flex items-center justify-center gap-2">
+                        <i class="fas fa-sign-in-alt"></i> 登录
+                    </button>
+                </div>
+            </div>
+
+            <!-- 注册表单 -->
+            <div id="form-register" class="hidden">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                        <input id="reg-username" type="text" placeholder="请输入用户名（3-20位）"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                        <input id="reg-password" type="password" placeholder="请输入密码（至少4位）"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">身份</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label id="role-student-card"
+                                class="role-card flex flex-col items-center gap-2 p-4 border-2 border-blue-500 bg-blue-50 rounded-2xl cursor-pointer">
+                                <input type="radio" name="role" value="student" class="hidden" checked>
+                                <i class="fas fa-user-graduate text-2xl text-blue-600"></i>
+                                <span class="font-medium text-blue-700">学生</span>
+                            </label>
+                            <label id="role-teacher-card"
+                                class="role-card flex flex-col items-center gap-2 p-4 border-2 border-gray-200 rounded-2xl cursor-pointer">
+                                <input type="radio" name="role" value="teacher" class="hidden">
+                                <i class="fas fa-chalkboard-teacher text-2xl text-gray-500"></i>
+                                <span class="font-medium text-gray-600">教师</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">验证码</label>
+                        <div class="flex gap-2">
+                            <input id="reg-captcha" type="text" placeholder="请输入验证码" maxlength="4"
+                                class="flex-1 px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500 tracking-widest uppercase">
+                            <canvas id="reg-captcha-box" class="captcha-box" title="点击刷新" onclick="refreshCaptcha('reg')"></canvas>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-1 text-right">
+                            <button type="button" onclick="refreshCaptcha('reg')" class="hover:text-blue-500 transition-colors">
+                                <i class="fas fa-rotate-right text-[10px] mr-0.5"></i>换一张
+                            </button>
+                        </p>
+                    </div>
+                    <p id="reg-error" class="text-red-500 text-sm hidden"></p>
+                    <button onclick="doRegister()"
+                        class="w-full py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium flex items-center justify-center gap-2">
+                        <i class="fas fa-user-plus"></i> 注册
+                    </button>
+                </div>
+            </div>
+        </div>
+        <p class="text-center text-xs text-gray-400 mt-6">CourseQA · 课程智能问答辅助系统</p>
+    </div>
+
+    <script>
+        const API = 'http://127.0.0.1:8001';
+
+        // ── 验证码 ──
+        const CAPTCHA_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        const captchaState = { login: '', reg: '' };
+
+        function genCaptchaText() {
+            let s = '';
+            for (let i = 0; i < 4; i++) s += CAPTCHA_CHARS[Math.floor(Math.random() * CAPTCHA_CHARS.length)];
+            return s;
+        }
+
+        function drawCaptcha(canvasId, text) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            canvas.width = 88; canvas.height = 44;
+            ctx.clearRect(0, 0, 88, 44);
+            for (let i = 0; i < 4; i++) {
+                ctx.strokeStyle = `hsl(${Math.random()*360},45%,72%)`; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(Math.random()*88, Math.random()*44);
+                ctx.lineTo(Math.random()*88, Math.random()*44); ctx.stroke();
+            }
+            const colors = ['#2563eb','#7c3aed','#0891b2','#1d4ed8'];
+            for (let i = 0; i < text.length; i++) {
+                ctx.save();
+                ctx.font = `bold ${17 + Math.random()*4}px monospace`;
+                ctx.fillStyle = colors[i % colors.length];
+                ctx.translate(10 + i * 19, 30); ctx.rotate((Math.random()-0.5)*0.4);
+                ctx.fillText(text[i], 0, 0); ctx.restore();
+            }
+            for (let i = 0; i < 28; i++) {
+                ctx.fillStyle = `hsl(${Math.random()*360},35%,72%)`;
+                ctx.beginPath(); ctx.arc(Math.random()*88, Math.random()*44, 1, 0, Math.PI*2); ctx.fill();
+            }
+        }
+
+        function refreshCaptcha(form) {
+            const text = genCaptchaText();
+            captchaState[form] = text;
+            drawCaptcha(form === 'login' ? 'login-captcha-box' : 'reg-captcha-box', text);
+            const inp = document.getElementById(form === 'login' ? 'login-captcha' : 'reg-captcha');
+            if (inp) inp.value = '';
+        }
+
+        function checkCaptcha(form) {
+            const inpId = form === 'login' ? 'login-captcha' : 'reg-captcha';
+            const val = document.getElementById(inpId).value.trim().toUpperCase();
+            return val === captchaState[form];
+        }
+
+        function shakePage() {
+            const card = document.querySelector('.bg-white.rounded-3xl');
+            card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+        }
+
+        // 初始化验证码（DOMContentLoaded 后执行）
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshCaptcha('login');
+            refreshCaptcha('reg');
+        });
+
+        // 已登录则直接跳转
+        const saved = JSON.parse(localStorage.getItem('cqa_user') || 'null');
+        if (saved?.token) {
+            location.href = saved.role === 'teacher' ? 'teacher.html' : 'student.html';
+        }
+
+        function showTab(tab) {
+            document.getElementById('form-login').classList.toggle('hidden', tab !== 'login');
+            document.getElementById('form-register').classList.toggle('hidden', tab !== 'register');
+            refreshCaptcha(tab === 'login' ? 'login' : 'reg');
+            document.getElementById('tab-login').className =
+                'flex-1 py-2 rounded-xl text-sm font-medium transition-all ' +
+                (tab === 'login' ? 'bg-white shadow text-blue-600' : 'text-gray-500');
+            document.getElementById('tab-register').className =
+                'flex-1 py-2 rounded-xl text-sm font-medium transition-all ' +
+                (tab === 'register' ? 'bg-white shadow text-blue-600' : 'text-gray-500');
+        }
+
+        // 角色卡片选中样式
+        document.querySelectorAll('input[name="role"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                document.querySelectorAll('.role-card').forEach(card => {
+                    card.className = card.className
+                        .replace('border-blue-500 bg-blue-50', 'border-gray-200')
+                        .replace('text-blue-600', 'text-gray-500')
+                        .replace('text-blue-700', 'text-gray-600');
+                });
+                const card = radio.closest('label');
+                card.className = card.className
+                    .replace('border-gray-200', 'border-blue-500 bg-blue-50');
+                card.querySelector('i').className = card.querySelector('i').className
+                    .replace('text-gray-500', 'text-blue-600');
+                card.querySelector('span').className = card.querySelector('span').className
+                    .replace('text-gray-600', 'text-blue-700');
+            });
+        });
+
+        async function doLogin() {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errEl = document.getElementById('login-error');
+            errEl.classList.add('hidden');
+            if (!username || !password) { errEl.textContent = '请填写用户名和密码'; errEl.classList.remove('hidden'); return; }
+            if (!checkCaptcha('login')) {
+                errEl.textContent = '验证码错误，请重新输入'; errEl.classList.remove('hidden');
+                refreshCaptcha('login'); shakePage(); return;
+            }
+            try {
+                const res = await fetch(`${API}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (!res.ok) { errEl.textContent = data.detail || '登录失败'; errEl.classList.remove('hidden'); return; }
+                localStorage.setItem('cqa_user', JSON.stringify({ token: data.token, role: data.role, username: data.username }));
+                location.href = data.role === 'teacher' ? 'teacher.html' : 'student.html';
+            } catch { errEl.textContent = '无法连接后端，请确认服务已启动'; errEl.classList.remove('hidden'); }
+        }
+
+        async function doRegister() {
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value;
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const errEl = document.getElementById('reg-error');
+            errEl.classList.add('hidden');
+            if (!username || !password) { errEl.textContent = '请填写用户名和密码'; errEl.classList.remove('hidden'); return; }
+            if (!checkCaptcha('reg')) {
+                errEl.textContent = '验证码错误，请重新输入'; errEl.classList.remove('hidden');
+                refreshCaptcha('reg'); shakePage(); return;
+            }
+            try {
+                const res = await fetch(`${API}/api/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password, role })
+                });
+                const data = await res.json();
+                if (!res.ok) { errEl.textContent = data.detail || '注册失败'; errEl.classList.remove('hidden'); return; }
+                // 注册成功后自动登录
+                const loginRes = await fetch(`${API}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const loginData = await loginRes.json();
+                localStorage.setItem('cqa_user', JSON.stringify({ token: loginData.token, role: loginData.role, username: loginData.username }));
+                location.href = role === 'teacher' ? 'teacher.html' : 'student.html';
+            } catch { errEl.textContent = '无法连接后端，请确认服务已启动'; errEl.classList.remove('hidden'); }
+        }
+
+        document.addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                if (!document.getElementById('form-register').classList.contains('hidden')) doRegister();
+                else doLogin();
+            }
+        });
+    </script>
+</body>
+</html>

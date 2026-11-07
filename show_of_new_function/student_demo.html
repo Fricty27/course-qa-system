@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CourseQA · 学生端演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { font-family: "Microsoft YaHei", system-ui, sans-serif; }
+        .page { display: none; }
+        .page.active { display: flex; }
+        .modal-bg { display: none; }
+        .modal-bg.open { display: flex; }
+        .result-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .result-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.08); }
+        .note-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.10); }
+        .note-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .md-answer ul { list-style-type: disc; padding-left: 1.5em; margin: 0.4em 0; }
+        .md-answer ol { list-style-type: decimal; padding-left: 1.5em; margin: 0.4em 0; }
+        .md-answer li { margin: 0.2em 0; }
+        .md-answer p { margin: 0.4em 0; }
+        .md-answer p:first-child { margin-top: 0; }
+        .md-answer strong { font-weight: 600; }
+        .cal-day { min-height: 52px; border-radius: 8px; padding: 4px 6px; cursor: pointer; }
+        .cal-day:hover { background: #f1f5f9; }
+        .cal-day.today { background: #eff6ff; font-weight: 700; }
+        .cal-day.has-dot::after { content:''; display:block; width:5px; height:5px; border-radius:50%; background:#3b82f6; margin: 2px auto 0; }
+        @keyframes blink-live { 0%,100%{opacity:1} 50%{opacity:0.35} }
+        .live-dot { animation: blink-live 1.8s ease-in-out infinite; }
+        /* option button selected state */
+        .opt-btn.selected { background:#4f46e5; color:white; border-color:#4f46e5; }
+        .opt-btn.correct { background:#dcfce7; color:#166534; border-color:#86efac; }
+        .opt-btn.wrong { background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+        /* code input */
+        .code-input { letter-spacing: 0.6em; font-size: 2rem; font-family: monospace; text-align: center; text-transform: uppercase; }
+        /* digit boxes */
+        .digit-box { width: 2.8rem; height: 3.2rem; border: 2px solid #c7d2fe; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; font-family: monospace; color: #312e81; background: white; transition: border-color 0.15s; }
+        .digit-box.filled { border-color: #6366f1; background: #eef2ff; }
+        .sct-tab-active { background:#4f46e5; color:white; }
+        .sct-tab-inactive { color:#4b5563; }
+        .sct-tab-inactive:hover { background:#f3f4f6; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- ══ 左侧导航栏 ══ -->
+<div id="left-nav" class="fixed left-0 top-0 h-full bg-gray-900 flex flex-col overflow-hidden" style="width:200px;z-index:35">
+    <div class="flex flex-col items-center py-5 px-3 border-b border-white/10 shrink-0">
+        <div class="w-12 h-12 rounded-full overflow-hidden bg-green-800 flex items-center justify-center mb-2 shrink-0">
+            <i class="fas fa-user-graduate text-white text-lg"></i>
+        </div>
+        <span class="text-white/80 text-sm font-medium truncate w-full text-center leading-tight mt-1">李同学</span>
+    </div>
+    <nav class="flex-1 py-2">
+        <button onclick="navigateTo('courses')" id="lnav-courses-btn"
+            class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white bg-white/20 hover:bg-white/25 transition-colors">
+            <i class="fas fa-book text-base shrink-0"></i>
+            <span class="text-sm whitespace-nowrap">我的课程</span>
+        </button>
+        <button onclick="navigateTo('msgs')" id="lnav-msgs-btn"
+            class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors relative">
+            <i class="fas fa-envelope text-base shrink-0"></i>
+            <span class="text-sm whitespace-nowrap">消息</span>
+            <span class="absolute top-2.5 left-7 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">1</span>
+        </button>
+        <button onclick="navigateTo('notes')" id="lnav-notes-btn"
+            class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors">
+            <i class="fas fa-book-open text-base shrink-0"></i>
+            <span class="text-sm whitespace-nowrap">我的笔记</span>
+        </button>
+        <button onclick="navigateTo('settings')" id="lnav-settings-btn"
+            class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors">
+            <i class="fas fa-cog text-base shrink-0"></i>
+            <span class="text-sm whitespace-nowrap">设置</span>
+        </button>
+    </nav>
+    <button class="shrink-0 w-full flex items-center px-4 py-3 text-white/40 hover:text-white/70 border-t border-white/10 transition-colors">
+        <span class="text-xs mr-auto">收起</span>
+        <i class="fas fa-angle-double-left text-xs"></i>
+    </button>
+</div>
+
+<!-- ══ 主内容区 ══ -->
+<div id="main-wrap" style="margin-left:200px">
+
+<!-- 顶栏 -->
+<div class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-3">
+        <span class="text-blue-600 font-bold text-xl">CourseQA</span>
+        <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">学生端</span>
+    </div>
+    <div class="flex items-center gap-3">
+        <button onclick="openModal('modal-profile')" class="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group">
+            <div class="w-9 h-9 rounded-full overflow-hidden border-2 border-green-200 flex items-center justify-center bg-green-50 shrink-0">
+                <i class="fas fa-user-graduate text-green-400 text-sm"></i>
+            </div>
+            <span class="text-gray-700 text-sm font-medium group-hover:text-green-600 transition-colors">李同学</span>
+            <i class="fas fa-pen text-gray-300 text-xs group-hover:text-green-400 transition-colors"></i>
+        </button>
+        <button class="text-sm text-gray-400 hover:text-red-500 flex items-center gap-1 ml-1">
+            <i class="fas fa-sign-out-alt"></i> 退出
+        </button>
+    </div>
+</div>
+
+<!-- ══ 课程列表页 ══ -->
+<div id="page-courses" class="page active flex items-start">
+    <div class="flex-1 min-w-0 p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h2 class="text-xl font-semibold text-gray-800">我的课程</h2>
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+                <input type="text" placeholder="搜索课程名称或课程码…"
+                    class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-2xl bg-gray-50 focus:outline-none focus:border-blue-400 focus:bg-white transition-colors w-56">
+            </div>
+        </div>
+        <div class="space-y-3 mb-5">
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between p-5">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-100 flex items-center justify-center shrink-0">
+                            <i class="fas fa-square-root-alt text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800 text-base">数学分析</p>
+                            <p class="text-sm text-gray-400 mt-0.5">课程码：<span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-xs">math101</span>
+                                <span class="ml-2 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg">28 名同学 · 3 份教材</span>
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="enterCourse('数学分析','math101')" class="px-5 py-2.5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 text-sm font-medium">
+                        进入课程 <i class="fas fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+                <div class="flex items-center justify-between p-5">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-teal-100 flex items-center justify-center shrink-0">
+                            <i class="fas fa-network-wired text-teal-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800 text-base">计算机网络</p>
+                            <p class="text-sm text-gray-400 mt-0.5">课程码：<span class="font-mono bg-gray-100 px-1.5 py-0.5 rounded text-xs">net202</span>
+                                <span class="ml-2 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg">35 名同学 · 5 份教材</span>
+                            </p>
+                        </div>
+                    </div>
+                    <button onclick="enterCourse('计算机网络','net202')" class="px-5 py-2.5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 text-sm font-medium">
+                        进入课程 <i class="fas fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+            <button onclick="toggleJoin()" class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors">
+                <span class="flex items-center gap-2 font-medium text-gray-700"><i class="fas fa-plus-circle text-blue-500"></i> 加入新课程</span>
+                <i id="join-icon" class="fas fa-chevron-down text-gray-400 text-sm transition-transform"></i>
+            </button>
+            <div id="join-form" class="hidden px-6 pb-5 pt-1 border-t border-gray-100">
+                <div class="flex gap-3 mt-3">
+                    <input type="text" placeholder="输入课程码，例如 math101" class="flex-1 px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+                    <button onclick="showToast('加入成功！')" class="px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium">加入</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="w-64 shrink-0 border-l border-gray-100 bg-white overflow-y-auto" style="position:sticky;top:65px;max-height:calc(100vh - 65px)">
+        <div class="sticky top-0 z-10 bg-white border-b border-gray-100 px-3 py-2">
+            <div class="flex items-center justify-between">
+                <button class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500"><i class="fas fa-chevron-left text-xs"></i></button>
+                <span class="text-sm font-semibold text-gray-700">2026年5月</span>
+                <button class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500"><i class="fas fa-chevron-right text-xs"></i></button>
+            </div>
+            <p class="text-center text-[10px] text-gray-400 mt-1">双击具体日期以设置日程</p>
+        </div>
+        <div id="cal-grid" class="px-2 py-1 text-xs text-gray-500"></div>
+    </div>
+</div>
+
+<!-- ══ 提问（QA）页 ══ -->
+<div id="page-qa" class="page" style="height:calc(100vh - 65px);position:relative">
+    <div class="flex-1 overflow-y-auto p-6 min-h-0">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h2 id="qa-title" class="text-xl font-semibold text-gray-800">数学分析</h2>
+                <p class="text-sm text-gray-400">课程码：math101</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="openModal('modal-history')" class="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-2xl hover:border-blue-300 hover:text-blue-600 text-sm flex items-center gap-1 shadow-sm">
+                    <i class="fas fa-history"></i> 我的历史
+                </button>
+                <button onclick="openModal('modal-pdf-browser')" class="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-2xl hover:border-blue-300 hover:text-blue-600 text-sm flex items-center gap-1 shadow-sm">
+                    <i class="fas fa-book-open"></i> 教材浏览
+                </button>
+                <button onclick="navigateTo('courses')" class="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-2xl hover:border-gray-300 text-sm flex items-center gap-1 shadow-sm">
+                    <i class="fas fa-th-list"></i> 课程列表
+                </button>
+            </div>
+        </div>
+        <div class="bg-white rounded-3xl shadow-sm p-5 mb-5 border border-gray-100">
+            <div class="flex gap-3">
+                <input id="question-input" type="text" value="泰勒展开的余项形式有哪些？"
+                    class="flex-1 px-5 py-4 border border-gray-300 rounded-3xl focus:outline-none focus:border-blue-500 text-lg">
+                <button onclick="showToast('正在检索教材并生成回答...')" class="px-8 py-4 bg-blue-600 text-white rounded-3xl hover:bg-blue-700 font-medium flex items-center gap-2">
+                    <i class="fas fa-paper-plane"></i> 提问
+                </button>
+            </div>
+        </div>
+        <div id="results">
+            <div class="mb-6">
+                <div class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100 mb-4">
+                    <div class="flex items-center gap-2 mb-4">
+                        <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center shrink-0"><i class="fas fa-robot text-white text-sm"></i></div>
+                        <span class="font-semibold text-gray-800">AI 综合解答</span>
+                        <span class="text-xs text-gray-400 ml-auto">基于 3 个相关段落</span>
+                    </div>
+                    <div class="md-answer text-gray-700 text-sm leading-relaxed">
+                        <p>泰勒展开的余项主要有以下几种形式：</p>
+                        <ol>
+                            <li><strong>皮亚诺余项</strong>（Peano）：<code>Rₙ(x) = o((x-x₀)ⁿ)</code>，即余项是 <code>(x-x₀)ⁿ</code> 的高阶无穷小。适用于定性分析，不给出误差的具体界。</li>
+                            <li><strong>拉格朗日余项</strong>（Lagrange）：<code>Rₙ(x) = f⁽ⁿ⁺¹⁾(ξ)/(n+1)! · (x-x₀)ⁿ⁺¹</code>，其中 ξ 介于 x 与 x₀ 之间。可用于估计余项大小，给出误差界。</li>
+                            <li><strong>柯西余项</strong>（Cauchy）：在某些证明中更为方便。</li>
+                            <li><strong>积分余项</strong>：最为精确，但计算复杂。</li>
+                        </ol>
+                        <p><strong>实用建议：</strong>定量估计误差时用拉格朗日余项；定性讨论极限时用皮亚诺余项更简洁。</p>
+                    </div>
+                    <div class="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+                        <button onclick="openModal('modal-note-editor')" class="px-4 py-2 text-sm text-green-600 border border-green-200 rounded-xl hover:bg-green-50 flex items-center gap-1">
+                            <i class="fas fa-sticky-note text-xs"></i> 保存为笔记
+                        </button>
+                        <button onclick="showToast('已复制到剪贴板')" class="px-4 py-2 text-sm text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 flex items-center gap-1">
+                            <i class="fas fa-copy text-xs"></i> 复制回答
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-500 mb-3 flex items-center gap-2">
+                        <i class="fas fa-book text-blue-400"></i> 原文来源
+                        <span class="text-xs font-normal text-gray-400">（相关性从高到低）</span>
+                    </h3>
+                    <div class="space-y-3">
+                        <details class="result-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <summary class="px-5 py-4 cursor-pointer flex items-center gap-3 hover:bg-gray-50 list-none">
+                                <div class="w-8 h-8 bg-red-50 text-red-400 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-file-pdf text-sm"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-800">数学分析上册（第三版）.pdf</p>
+                                    <p class="text-xs text-gray-400 mt-0.5">第 204 页 · 相关度 97%</p>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button onclick="event.stopPropagation();openModal('modal-pdf-view')" class="px-3 py-1.5 text-xs text-blue-500 border border-blue-200 rounded-xl hover:bg-blue-50"><i class="fas fa-external-link-alt mr-1"></i>跳转原文</button>
+                                    <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                                </div>
+                            </summary>
+                            <div class="px-5 pb-4 pt-1 border-t border-gray-50">
+                                <p class="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-xl p-4">设函数 f 在点 x₀ 的某邻域内有 n+1 阶导数，则对该邻域内任意 x，有<br><span class="font-mono text-blue-700">f(x) = Tₙ(x) + Rₙ(x)</span><br><br>其中 <strong>拉格朗日余项</strong> Rₙ(x) = f⁽ⁿ⁺¹⁾(ξ)/(n+1)! · (x-x₀)ⁿ⁺¹，ξ 是介于 x₀ 与 x 之间的某个值。</p>
+                            </div>
+                        </details>
+                        <details class="result-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <summary class="px-5 py-4 cursor-pointer flex items-center gap-3 hover:bg-gray-50 list-none">
+                                <div class="w-8 h-8 bg-red-50 text-red-400 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-file-pdf text-sm"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-800">数学分析上册（第三版）.pdf</p>
+                                    <p class="text-xs text-gray-400 mt-0.5">第 206 页 · 相关度 91%</p>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button onclick="event.stopPropagation();openModal('modal-pdf-view')" class="px-3 py-1.5 text-xs text-blue-500 border border-blue-200 rounded-xl hover:bg-blue-50"><i class="fas fa-external-link-alt mr-1"></i>跳转原文</button>
+                                    <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                                </div>
+                            </summary>
+                            <div class="px-5 pb-4 pt-1 border-t border-gray-50">
+                                <p class="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-xl p-4"><strong>皮亚诺余项：</strong>若 f 在 x₀ 处有 n 阶导数，则 f(x) = Tₙ(x) + o((x-x₀)ⁿ)（x→x₀）。皮亚诺余项条件较弱，仅需 n 阶可导，适合讨论函数在某点附近的局部性态。</p>
+                            </div>
+                        </details>
+                        <details class="result-card bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <summary class="px-5 py-4 cursor-pointer flex items-center gap-3 hover:bg-gray-50 list-none">
+                                <div class="w-8 h-8 bg-red-50 text-red-400 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-file-pdf text-sm"></i></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-gray-800">极限与连续性专题讲义.pdf</p>
+                                    <p class="text-xs text-gray-400 mt-0.5">第 38 页 · 相关度 84%</p>
+                                </div>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button onclick="event.stopPropagation();openModal('modal-pdf-view')" class="px-3 py-1.5 text-xs text-blue-500 border border-blue-200 rounded-xl hover:bg-blue-50"><i class="fas fa-external-link-alt mr-1"></i>跳转原文</button>
+                                    <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+                                </div>
+                            </summary>
+                            <div class="px-5 pb-4 pt-1 border-t border-gray-50">
+                                <p class="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-xl p-4">麦克劳林公式（泰勒公式在 x₀=0 处的特例）常用展开：eˣ = 1 + x + x²/2! + ... · sin x = x − x³/3! + x⁵/5! − ...</p>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 课堂互动悬浮按钮 -->
+    <button onclick="openModal('modal-student-classroom')"
+        class="fixed bottom-8 right-8 z-30 flex items-center gap-2 bg-indigo-600 text-white pl-4 pr-5 py-3.5 rounded-2xl shadow-2xl hover:bg-indigo-700 font-medium transition-all hover:scale-105"
+        style="box-shadow:0 8px 32px rgba(79,70,229,0.4)">
+        <div class="relative">
+            <i class="fas fa-broadcast-tower text-lg"></i>
+            <span class="live-dot absolute -top-1 -right-1 w-2 h-2 bg-red-400 rounded-full border border-indigo-600"></span>
+        </div>
+        <span>课堂互动</span>
+    </button>
+</div>
+
+<!-- ══ 消息页 ══ -->
+<div id="page-msgs" class="page" style="height:calc(100vh - 65px)">
+    <div class="shrink-0 bg-white border-b border-gray-200 flex items-center px-6 h-12 w-full">
+        <button class="flex items-center gap-1.5 px-4 h-12 text-sm font-medium border-b-2 border-blue-500 text-blue-600"><i class="fas fa-comment-dots"></i> 私聊消息</button>
+        <button class="flex items-center gap-1.5 px-4 h-12 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700"><i class="fas fa-users"></i> 群组消息<span class="min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center px-1 ml-0.5">1</span></button>
+    </div>
+    <div class="flex flex-1 min-h-0 bg-gray-50 w-full" style="height:calc(100% - 48px)">
+        <div class="w-72 border-r border-gray-200 bg-white flex flex-col shrink-0">
+            <div class="px-4 py-2 text-xs text-gray-400 font-medium border-b border-gray-100">教师对话</div>
+            <div class="flex-1 overflow-y-auto">
+                <div onclick="openConvDetail()" class="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 cursor-pointer bg-blue-50">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0"><i class="fas fa-chalkboard-teacher text-base"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between"><p class="font-medium text-sm text-gray-800">张教授</p><span class="text-xs text-gray-400">09:38</span></div>
+                        <p class="text-xs text-gray-500 truncate">这是夹逼定理的经典应用...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="student-conv-detail" class="flex-1 flex flex-col min-h-0 bg-white hidden">
+            <div class="px-6 py-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
+                <button onclick="closeConvDetail()" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-arrow-left text-sm"></i></button>
+                <span class="font-medium text-gray-800">张教授</span>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
+                <div class="flex justify-start"><div class="max-w-xs"><div class="bg-white rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm border border-gray-100"><p class="text-sm text-gray-800">老师，极限 lim(x→0) sin(x)/x 为什么等于1？</p></div><p class="text-xs text-gray-400 mt-1 ml-1">09:35</p></div></div>
+                <div class="flex justify-end"><div class="max-w-xs"><div class="bg-blue-600 rounded-2xl rounded-tr-sm px-4 py-2.5"><p class="text-sm text-white">这是夹逼定理的经典应用，你看教材第68页的扇形面积夹逼证明。</p></div><p class="text-xs text-gray-400 mt-1 text-right mr-1">09:38</p></div></div>
+            </div>
+            <div class="px-4 py-3 border-t border-gray-100 shrink-0 bg-white">
+                <div class="flex gap-2 items-end">
+                    <textarea rows="1" placeholder="输入消息..." class="flex-1 px-4 py-2.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-blue-400 bg-gray-50 resize-none"></textarea>
+                    <button onclick="showToast('消息已发送')" class="px-5 py-2.5 bg-blue-600 text-white rounded-2xl text-sm hover:bg-blue-700 font-medium shrink-0">发送</button>
+                </div>
+            </div>
+        </div>
+        <div id="student-conv-placeholder" class="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3 bg-white">
+            <i class="fas fa-comments text-5xl text-gray-200"></i>
+            <p class="text-sm">选择一个对话，开始聊天</p>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 笔记页 ══ -->
+<div id="page-notes" class="page" style="height:calc(100vh - 65px);overflow-y:auto;background:#f9fafb">
+    <div class="max-w-5xl mx-auto p-6 w-full">
+        <div class="flex items-center justify-between mb-6">
+            <div><h2 class="text-xl font-bold text-gray-800">我的笔记</h2><p class="text-sm text-gray-400 mt-1">共 4 条笔记</p></div>
+            <button onclick="openModal('modal-note-editor')" class="px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 flex items-center gap-2 font-medium"><i class="fas fa-plus text-xs"></i> 新建笔记</button>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+            <div class="note-card bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                <div class="h-1.5 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+                <div class="p-4 flex-1">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg">数学分析上册 · 第204页</span>
+                        <span class="text-xs bg-green-100 text-green-600 px-1.5 py-0.5 rounded">公开</span>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-800 mb-1.5">泰勒展开余项总结</p>
+                    <p class="text-sm text-gray-700 leading-relaxed" style="-webkit-line-clamp:4;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">皮亚诺余项：o((x-x₀)ⁿ)，适合定性极限；拉格朗日余项含ξ，给出误差上界；积分余项最精确但复杂。考试主用前两种。</p>
+                </div>
+                <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+                    <div class="flex gap-2"><button onclick="openModal('modal-note-editor')" class="text-xs text-gray-400 hover:text-blue-500"><i class="fas fa-pencil-alt"></i></button></div>
+                    <span class="text-xs text-gray-400">2026-05-15</span>
+                </div>
+            </div>
+            <div class="note-card bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                <div class="h-1.5 bg-gradient-to-r from-purple-400 to-violet-500"></div>
+                <div class="p-4 flex-1">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg">✨ AI问答归整</span>
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded font-medium flex items-center gap-0.5"><i class="fas fa-robot text-[9px]"></i> AI</span>
+                            <span class="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">私密</span>
+                        </div>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-800 mb-1.5">柯西收敛准则 AI 解答</p>
+                    <p class="text-sm text-gray-700 leading-relaxed" style="-webkit-line-clamp:4;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">数列收敛的充要条件是它是柯西数列：对任意ε>0，∃N，∀m,n>N，|aₘ-aₙ|&lt;ε。意义：判断收敛无需预知极限值。</p>
+                </div>
+                <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+                    <div class="flex gap-2"><button onclick="openModal('modal-note-editor')" class="text-xs text-gray-400 hover:text-blue-500"><i class="fas fa-pencil-alt"></i></button></div>
+                    <span class="text-xs text-gray-400">2026-05-14</span>
+                </div>
+            </div>
+            <div class="note-card bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                <div class="h-1.5 bg-gradient-to-r from-amber-400 to-orange-500"></div>
+                <div class="p-4 flex-1">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg">📌 独立笔记</span>
+                        <span class="text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded">私密</span>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-800 mb-1.5">期末复习重点整理</p>
+                    <p class="text-sm text-gray-700 leading-relaxed" style="-webkit-line-clamp:4;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">重点：极限（ε-δ，夹逼，洛必达）、导数（链式法则、隐函数）、积分（换元、分部）、级数收敛判别（比值、根值）。</p>
+                </div>
+                <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+                    <div class="flex gap-2"><button onclick="openModal('modal-note-editor')" class="text-xs text-gray-400 hover:text-blue-500"><i class="fas fa-pencil-alt"></i></button></div>
+                    <span class="text-xs text-gray-400">2026-05-10</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 设置页 ══ -->
+<div id="page-settings" class="page" style="height:calc(100vh - 65px);overflow-y:auto;background:#f9fafb">
+    <div class="max-w-2xl mx-auto p-6 w-full">
+        <h2 class="text-xl font-bold text-gray-800 mb-6">设置</h2>
+        <div class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100 space-y-5">
+            <div class="flex items-center gap-3 pb-4 border-b border-gray-100">
+                <div class="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-id-badge"></i></div>
+                <div><p class="text-xs text-gray-400">账号 ID</p><p class="font-mono text-sm font-medium text-gray-800">student1</p></div>
+            </div>
+            <button onclick="showToast('个人信息已保存')" class="px-6 py-2.5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium text-sm"><i class="fas fa-save mr-1"></i> 保存</button>
+        </div>
+    </div>
+</div>
+
+</div><!-- /main-wrap -->
+
+<!-- ══ 弹窗：学生课堂互动 ══ -->
+<div id="modal-student-classroom" class="modal-bg fixed inset-0 z-50 bg-black/50 items-end justify-end p-6" style="backdrop-filter:blur(2px)">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[88vh] flex flex-col" style="box-shadow:0 24px 80px rgba(0,0,0,0.25)">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-broadcast-tower text-white text-xs"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-base leading-tight">课堂互动</h3>
+                    <p class="text-xs text-gray-400">数学分析 · <span class="text-green-500">活动检测中</span></p>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-student-classroom')" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-times"></i></button>
+        </div>
+        <!-- Tab nav -->
+        <div class="flex gap-1 px-4 py-2.5 border-b border-gray-100 shrink-0 bg-gray-50/80">
+            <button onclick="switchSCT('checkin')" id="sct-tab-checkin"
+                class="flex-1 py-2 rounded-xl text-xs font-medium transition-all sct-tab-active">
+                <i class="fas fa-hand-paper mr-1"></i> 签到
+                <span class="inline-flex items-center justify-center w-3.5 h-3.5 bg-red-400 text-white text-[8px] rounded-full ml-0.5">!</span>
+            </button>
+            <button onclick="switchSCT('quiz')" id="sct-tab-quiz"
+                class="flex-1 py-2 rounded-xl text-xs font-medium transition-all sct-tab-inactive">
+                <i class="fas fa-clipboard-list mr-1"></i> 测验
+            </button>
+            <button onclick="switchSCT('danmaku')" id="sct-tab-danmaku"
+                class="flex-1 py-2 rounded-xl text-xs font-medium transition-all sct-tab-inactive">
+                <i class="fas fa-paper-plane mr-1"></i> 弹幕
+            </button>
+        </div>
+
+        <!-- ── 学生签到内容 ── -->
+        <div id="sct-content-checkin" class="flex-1 overflow-y-auto min-h-0 p-5">
+            <!-- checkin active -->
+            <div id="sct-ci-active">
+                <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 mb-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="live-dot w-2 h-2 bg-green-500 rounded-full inline-block"></span>
+                            <span class="text-sm font-semibold text-indigo-900">签到进行中</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 bg-white border border-indigo-200 rounded-xl px-3 py-1">
+                            <i class="fas fa-clock text-indigo-400 text-xs"></i>
+                            <span id="sct-timer" class="font-mono font-bold text-indigo-800">03:27</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-indigo-600">数学分析 · 张教授发起</p>
+                </div>
+                <!-- Input state -->
+                <div id="sct-ci-input">
+                    <p class="text-sm font-semibold text-gray-700 mb-3">输入签到码</p>
+                    <div class="flex gap-2 justify-center mb-3">
+                        <div class="digit-box filled">A</div>
+                        <div class="digit-box filled">7</div>
+                        <div class="digit-box filled">K</div>
+                        <div class="digit-box filled">3</div>
+                        <div class="digit-box" id="d5"></div>
+                        <div class="digit-box" id="d6"></div>
+                    </div>
+                    <div class="flex items-center gap-2 mb-4">
+                        <input id="code-input-hidden" type="text" maxlength="6" placeholder="A7K3M9"
+                            class="flex-1 px-4 py-3 border border-gray-200 rounded-2xl text-center text-lg font-mono uppercase tracking-widest focus:outline-none focus:border-indigo-400 bg-gray-50"
+                            oninput="updateDigitBoxes(this.value)">
+                    </div>
+                    <button onclick="submitCheckin()" class="w-full py-3.5 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 font-semibold text-sm">
+                        <i class="fas fa-check mr-1"></i> 确认签到
+                    </button>
+                    <p class="text-xs text-center text-gray-400 mt-2">或使用扫码签到</p>
+                    <button onclick="showToast('请将摄像头对准投影屏幕上的二维码')" class="w-full mt-1.5 py-2.5 border border-gray-200 text-gray-600 rounded-2xl hover:bg-gray-50 text-sm flex items-center justify-center gap-2">
+                        <i class="fas fa-qrcode text-gray-400"></i> 扫码签到
+                    </button>
+                </div>
+                <!-- Success state (hidden) -->
+                <div id="sct-ci-success" class="hidden text-center py-4">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fas fa-check text-green-500 text-2xl"></i>
+                    </div>
+                    <h4 class="font-semibold text-gray-800 text-lg mb-1">签到成功！</h4>
+                    <p class="text-sm text-gray-500">签到时间：09:48</p>
+                    <div class="mt-4 bg-green-50 border border-green-100 rounded-2xl px-4 py-3">
+                        <p class="text-xs text-green-700"><i class="fas fa-info-circle mr-1"></i>本次签到已记录，如有疑问请联系教师</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── 学生测验内容 ── -->
+        <div id="sct-content-quiz" class="flex-1 overflow-y-auto min-h-0 p-5 hidden">
+            <!-- Quiz header -->
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <span class="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">随堂测验 · 第4次</span>
+                    <p class="text-xs text-gray-400 mt-1">共 3 题 · 泰勒展开与余项</p>
+                </div>
+                <div class="flex items-center gap-1.5 bg-orange-50 border border-orange-200 rounded-xl px-3 py-1.5">
+                    <i class="fas fa-clock text-orange-400 text-xs"></i>
+                    <span id="quiz-timer" class="font-mono font-bold text-orange-700 text-sm">08:15</span>
+                </div>
+            </div>
+            <!-- Progress -->
+            <div class="flex gap-2 mb-5">
+                <div class="flex-1 h-1.5 bg-green-400 rounded-full"></div>
+                <div class="flex-1 h-1.5 bg-indigo-500 rounded-full"></div>
+                <div class="flex-1 h-1.5 bg-gray-200 rounded-full"></div>
+            </div>
+            <!-- Not submitted state -->
+            <div id="sct-quiz-answering">
+                <div class="mb-1 flex items-center justify-between">
+                    <span class="text-xs text-gray-400 font-medium">第 2 题 / 共 3 题</span>
+                    <span class="text-xs text-indigo-600 font-medium">单选题</span>
+                </div>
+                <p class="text-sm font-semibold text-gray-800 mb-4 mt-1">拉格朗日余项中，ξ 满足的条件是？</p>
+                <div class="space-y-2.5" id="quiz-options">
+                    <button onclick="selectOpt(this,'A')" class="opt-btn w-full flex items-center gap-3 px-4 py-3 border border-gray-200 rounded-2xl text-left hover:border-indigo-300 transition-all text-sm">
+                        <span class="w-6 h-6 border border-gray-300 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 text-gray-500">A</span>
+                        <span>ξ = x₀（展开点）</span>
+                    </button>
+                    <button onclick="selectOpt(this,'B')" id="opt-B" class="opt-btn w-full flex items-center gap-3 px-4 py-3 border border-indigo-500 rounded-2xl text-left transition-all text-sm selected bg-indigo-600 text-white">
+                        <span class="w-6 h-6 bg-white/20 rounded-lg flex items-center justify-center text-xs font-bold shrink-0">B</span>
+                        <span>ξ 介于 x₀ 与 x 之间（不确定具体值）</span>
+                    </button>
+                    <button onclick="selectOpt(this,'C')" class="opt-btn w-full flex items-center gap-3 px-4 py-3 border border-gray-200 rounded-2xl text-left hover:border-indigo-300 transition-all text-sm">
+                        <span class="w-6 h-6 border border-gray-300 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 text-gray-500">C</span>
+                        <span>ξ = x（目标点）</span>
+                    </button>
+                    <button onclick="selectOpt(this,'D')" class="opt-btn w-full flex items-center gap-3 px-4 py-3 border border-gray-200 rounded-2xl text-left hover:border-indigo-300 transition-all text-sm">
+                        <span class="w-6 h-6 border border-gray-300 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 text-gray-500">D</span>
+                        <span>ξ 可以取任意实数</span>
+                    </button>
+                </div>
+                <div class="flex gap-2 mt-5">
+                    <button onclick="showToast('已返回第1题')" class="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl text-sm hover:bg-gray-50">
+                        <i class="fas fa-arrow-left mr-1"></i> 上一题
+                    </button>
+                    <button onclick="showToast('已前往第3题')" class="flex-1 py-3 border border-gray-200 text-gray-600 rounded-2xl text-sm hover:bg-gray-50">
+                        下一题 <i class="fas fa-arrow-right ml-1"></i>
+                    </button>
+                </div>
+                <button onclick="submitQuiz()" class="w-full mt-2 py-3.5 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 font-semibold text-sm">
+                    <i class="fas fa-paper-plane mr-1"></i> 提交答卷
+                </button>
+            </div>
+            <!-- Submitted state (hidden) -->
+            <div id="sct-quiz-submitted" class="hidden">
+                <div class="text-center mb-5">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-check text-green-500 text-2xl"></i></div>
+                    <h4 class="font-semibold text-gray-800 text-lg">答卷已提交</h4>
+                    <p class="text-3xl font-black text-indigo-600 mt-1">2 <span class="text-lg font-semibold text-gray-400">/ 3 分</span></p>
+                </div>
+                <div class="space-y-3">
+                    <div class="bg-green-50 border border-green-200 rounded-2xl p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-6 h-6 bg-green-500 text-white rounded-lg flex items-center justify-center text-xs font-bold shrink-0">✓</span>
+                            <span class="text-sm font-medium text-green-800">第1题 正确</span>
+                            <span class="text-xs text-green-600 ml-auto">选了 A</span>
+                        </div>
+                        <p class="text-xs text-green-700 bg-white/60 rounded-xl p-2">解析：皮亚诺余项 o((x-x₀)ⁿ) 表示比 (x-x₀)ⁿ 更高阶的无穷小，是定性描述。</p>
+                    </div>
+                    <div class="bg-green-50 border border-green-200 rounded-2xl p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-6 h-6 bg-green-500 text-white rounded-lg flex items-center justify-center text-xs font-bold shrink-0">✓</span>
+                            <span class="text-sm font-medium text-green-800">第2题 正确</span>
+                            <span class="text-xs text-green-600 ml-auto">选了 B</span>
+                        </div>
+                        <p class="text-xs text-green-700 bg-white/60 rounded-xl p-2">解析：ξ 是中值定理保证存在于 x₀ 和 x 之间的某点，其具体位置未知，但可用于估计误差大小。</p>
+                    </div>
+                    <div class="bg-red-50 border border-red-200 rounded-2xl p-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="w-6 h-6 bg-red-500 text-white rounded-lg flex items-center justify-center text-xs font-bold shrink-0">✗</span>
+                            <span class="text-sm font-medium text-red-800">第3题 错误</span>
+                            <span class="text-xs text-red-500 ml-auto">选了C → 正确:A,C</span>
+                        </div>
+                        <p class="text-xs text-red-700 bg-white/60 rounded-xl p-2">解析：拉格朗日余项适合定量误差估计和数值计算，B选项（讨论极限）更适合皮亚诺余项。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── 学生弹幕内容 ── -->
+        <div id="sct-content-danmaku" class="flex-1 overflow-y-auto min-h-0 p-5 hidden flex flex-col">
+            <p class="text-sm font-semibold text-gray-700 mb-2">发送课堂弹幕</p>
+            <div class="relative mb-2">
+                <textarea id="danmaku-input" rows="4" maxlength="200" placeholder="输入你的问题或想法，发送给老师..."
+                    class="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-indigo-400 bg-gray-50 resize-none"
+                    oninput="updateCharCount(this)">老师，拉格朗日余项中的 ξ 是如何确定的？是否每次展开都会得到不同的 ξ？</textarea>
+                <span id="char-count" class="absolute bottom-2.5 right-3 text-xs text-gray-400">剩余 143/200 字</span>
+            </div>
+            <div class="flex items-center justify-between mb-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked class="w-4 h-4 rounded accent-indigo-600" id="anon-check">
+                    <span class="text-sm text-gray-700">匿名发送</span>
+                </label>
+                <button onclick="sendDanmaku()" class="px-5 py-2.5 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 text-sm font-medium flex items-center gap-1.5">
+                    <i class="fas fa-paper-plane text-xs"></i> 发送
+                </button>
+            </div>
+            <div class="border-t border-gray-100 pt-4">
+                <h5 class="text-xs font-medium text-gray-500 mb-3">我的发送记录</h5>
+                <div class="space-y-2">
+                    <div class="bg-gray-50 rounded-xl p-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs text-gray-400">09:31 · 匿名</span>
+                            <span class="flex items-center gap-1 text-xs text-green-600"><i class="fas fa-check text-[9px]"></i> 教师已处理</span>
+                        </div>
+                        <p class="text-xs text-gray-700">"皮亚诺余项和拉格朗日余项哪个更常用，各有什么应用场景？"</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-3">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs text-gray-400">09:38 · 匿名</span>
+                            <span class="text-xs text-orange-500">待处理</span>
+                        </div>
+                        <p class="text-xs text-gray-700">"eˣ 展开的收敛域是整个实数轴，但为什么 ln(1+x) 只在 -1&lt;x≤1 收敛？"</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 弹窗：历史记录 ══ -->
+<div id="modal-history" class="modal-bg fixed inset-0 z-50 bg-black/50 items-center justify-center p-4" style="backdrop-filter:blur(2px)">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+            <h3 class="font-semibold text-lg">我的提问历史 · 数学分析</h3>
+            <button onclick="closeModal('modal-history')" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="overflow-y-auto p-6 flex-1">
+            <div class="space-y-3">
+                <div class="border border-gray-100 rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-gray-400">2026-05-15 09:41</span>
+                        <span class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg">有AI回答</span>
+                    </div>
+                    <p class="text-sm font-medium text-gray-800">❓ 泰勒展开的余项形式有哪些？</p>
+                    <p class="text-xs text-gray-500 mt-2 bg-gray-50 rounded-xl p-3">💡 泰勒展开的余项主要有皮亚诺余项、拉格朗日余项、柯西余项和积分余项四种形式...</p>
+                </div>
+                <div class="border border-gray-100 rounded-2xl p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs text-gray-400">2026-05-14 16:20</span>
+                        <span class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg">有AI回答</span>
+                    </div>
+                    <p class="text-sm font-medium text-gray-800">❓ 什么是柯西收敛准则？</p>
+                    <p class="text-xs text-gray-500 mt-2 bg-gray-50 rounded-xl p-3">💡 柯西收敛准则指出：数列收敛的充要条件是它是柯西数列...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 弹窗：教材浏览 ══ -->
+<div id="modal-pdf-browser" class="modal-bg fixed inset-0 z-50 bg-black/50 items-center justify-center p-4" style="backdrop-filter:blur(2px)">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+            <h3 class="font-semibold text-lg">教材浏览 · 数学分析</h3>
+            <button onclick="closeModal('modal-pdf-browser')" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex flex-1 min-h-0">
+            <div class="w-56 shrink-0 border-r border-gray-100 overflow-y-auto p-3 space-y-1">
+                <div class="px-3 py-2.5 rounded-xl bg-blue-50 text-blue-700 text-sm font-medium cursor-pointer"><i class="fas fa-file-pdf text-red-400 mr-2"></i>数学分析上册（第三版）</div>
+                <div class="px-3 py-2.5 rounded-xl hover:bg-gray-50 text-gray-700 text-sm cursor-pointer"><i class="fas fa-file-pdf text-red-400 mr-2"></i>极限与连续性专题讲义</div>
+                <div class="px-3 py-2.5 rounded-xl hover:bg-gray-50 text-gray-700 text-sm cursor-pointer"><i class="fas fa-file-pdf text-red-400 mr-2"></i>微积分习题集（附详解）</div>
+            </div>
+            <div class="flex-1 flex items-center justify-center bg-gray-50 p-4">
+                <div class="text-center text-gray-400">
+                    <i class="fas fa-file-pdf text-5xl text-red-300 mb-3 block"></i>
+                    <p class="font-medium">数学分析上册（第三版）</p>
+                    <p class="text-sm mt-1">386 页 · 18.4 MB</p>
+                    <button onclick="closeModal('modal-pdf-browser');openModal('modal-pdf-view')" class="mt-4 px-5 py-2.5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 text-sm font-medium"><i class="fas fa-external-link-alt mr-1"></i> 打开预览</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 弹窗：PDF 预览 ══ -->
+<div id="modal-pdf-view" class="modal-bg fixed inset-0 z-50 bg-black/50 items-center justify-center p-4" style="backdrop-filter:blur(2px)">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+            <h3 class="font-semibold">数学分析上册（第三版）.pdf · 第 204 页</h3>
+            <button onclick="closeModal('modal-pdf-view')" class="text-gray-400 hover:text-gray-600 text-xl w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex-1 p-3 min-h-0 flex items-center justify-center bg-gray-50 rounded-b-3xl">
+            <div class="text-center text-gray-400">
+                <i class="fas fa-file-pdf text-6xl text-red-300 mb-4 block"></i>
+                <p class="font-medium">PDF 预览区域（第 204 页）</p>
+                <p class="text-sm mt-1">（演示模式 · 实际运行时跳转到对应页码）</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 弹窗：笔记编辑器 ══ -->
+<div id="modal-note-editor" class="modal-bg fixed inset-0 z-50 bg-black/50 items-center justify-center p-4" style="backdrop-filter:blur(2px)">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h3 class="font-semibold text-lg">新建笔记</h3>
+            <button onclick="closeModal('modal-note-editor')" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">标题</label>
+                <input type="text" value="泰勒展开余项总结" class="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-blue-400">
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">内容</label>
+                <textarea rows="5" class="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-blue-400 resize-none">皮亚诺余项：o((x-x₀)ⁿ)，适合定性分析极限；拉格朗日余项含ξ，给出误差上界，适合定量计算；积分余项最精确但复杂。</textarea>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked class="w-4 h-4 rounded accent-blue-600">
+                <span class="text-sm text-gray-700">设为公开（教师可见）</span>
+            </label>
+            <div class="flex items-center gap-2 text-xs text-gray-500 bg-blue-50 rounded-xl px-3 py-2">
+                <i class="fas fa-link text-blue-400"></i>关联文档：数学分析上册（第三版）.pdf · 第 204 页
+            </div>
+        </div>
+        <div class="px-6 pb-6 flex gap-3">
+            <button onclick="showToast('笔记已保存');closeModal('modal-note-editor')" class="flex-1 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium text-sm"><i class="fas fa-save mr-1"></i> 保存笔记</button>
+            <button onclick="closeModal('modal-note-editor')" class="px-5 py-3 bg-gray-100 text-gray-600 rounded-2xl hover:bg-gray-200 text-sm">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 弹窗：个人设置 ══ -->
+<div id="modal-profile" class="modal-bg fixed inset-0 z-40 bg-black/30 items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="font-semibold text-lg">个人设置</h3>
+            <button onclick="closeModal('modal-profile')" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex flex-col items-center mb-5">
+            <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-green-100 bg-green-50 flex items-center justify-center cursor-pointer hover:opacity-80">
+                <i class="fas fa-user-graduate text-green-300 text-4xl"></i>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">点击头像更换图片</p>
+        </div>
+        <div class="mb-5">
+            <label class="block text-sm text-gray-600 mb-1">昵称</label>
+            <input type="text" value="李同学" class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+        </div>
+        <button onclick="showToast('设置已保存');closeModal('modal-profile')" class="w-full py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium"><i class="fas fa-save mr-1"></i> 保存设置</button>
+    </div>
+</div>
+
+<!-- Toast 提示 -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] hidden">
+    <div class="bg-gray-800/90 text-white text-sm px-5 py-2.5 rounded-2xl shadow-xl backdrop-blur-sm" id="toast-text"></div>
+</div>
+
+<script>
+// ── 导航 ─────────────────────────────────────────────────
+const PAGES = ['courses', 'qa', 'msgs', 'notes', 'settings'];
+function navigateTo(page) {
+    PAGES.forEach(p => {
+        const el = document.getElementById('page-' + p);
+        const btn = document.getElementById('lnav-' + p + '-btn');
+        if (!el) return;
+        el.classList.remove('active');
+        el.style.display = 'none';
+        if (btn) { btn.classList.remove('bg-white/20','text-white'); btn.classList.add('text-white/70'); }
+    });
+    const target = document.getElementById('page-' + page);
+    if (!target) return;
+    if (['msgs','qa','courses'].includes(page)) { target.style.display = 'flex'; }
+    else { target.style.display = 'flex'; target.style.flexDirection = 'column'; }
+    target.classList.add('active');
+    const btn = document.getElementById('lnav-' + page + '-btn');
+    if (btn) { btn.classList.add('bg-white/20','text-white'); btn.classList.remove('text-white/70'); }
+}
+
+function enterCourse(name, key) {
+    document.getElementById('qa-title').textContent = name;
+    navigateTo('qa');
+}
+
+let _joinOpen = false;
+function toggleJoin() {
+    _joinOpen = !_joinOpen;
+    document.getElementById('join-form').classList.toggle('hidden', !_joinOpen);
+    document.getElementById('join-icon').style.transform = _joinOpen ? 'rotate(180deg)' : '';
+}
+
+// ── 课堂互动 Tab ─────────────────────────────────────────
+function switchSCT(tab) {
+    ['checkin','quiz','danmaku'].forEach(t => {
+        const content = document.getElementById('sct-content-' + t);
+        const tabBtn = document.getElementById('sct-tab-' + t);
+        if (t === tab) {
+            content.classList.remove('hidden');
+            tabBtn.classList.add('sct-tab-active'); tabBtn.classList.remove('sct-tab-inactive');
+        } else {
+            content.classList.add('hidden');
+            tabBtn.classList.remove('sct-tab-active'); tabBtn.classList.add('sct-tab-inactive');
+        }
+    });
+}
+
+// ── 签到 ─────────────────────────────────────────────────
+let sctSec = 207;
+let sctInterval = setInterval(() => {
+    sctSec = Math.max(0, sctSec - 1);
+    const el = document.getElementById('sct-timer');
+    if (el) el.textContent = String(Math.floor(sctSec/60)).padStart(2,'0') + ':' + String(sctSec%60).padStart(2,'0');
+}, 1000);
+
+function updateDigitBoxes(val) {
+    const v = val.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+    for (let i = 1; i <= 6; i++) {
+        const box = document.querySelector('.digit-box:nth-child(' + i + ')');
+        if (box) {
+            box.textContent = v[i-1] || '';
+            box.classList.toggle('filled', !!v[i-1]);
+        }
+    }
+}
+
+function submitCheckin() {
+    const input = document.getElementById('code-input-hidden');
+    const code = (input ? input.value : '').toUpperCase().trim();
+    if (code.length < 6) { showToast('请输入完整的6位签到码'); return; }
+    document.getElementById('sct-ci-input').classList.add('hidden');
+    document.getElementById('sct-ci-success').classList.remove('hidden');
+    clearInterval(sctInterval);
+    showToast('签到成功！');
+}
+
+// ── 测验 ─────────────────────────────────────────────────
+let quizSec = 495;
+let quizInterval = setInterval(() => {
+    quizSec = Math.max(0, quizSec - 1);
+    const el = document.getElementById('quiz-timer');
+    if (el) el.textContent = String(Math.floor(quizSec/60)).padStart(2,'0') + ':' + String(quizSec%60).padStart(2,'0');
+}, 1000);
+
+function selectOpt(btn, opt) {
+    document.querySelectorAll('.opt-btn').forEach(b => {
+        b.classList.remove('selected','bg-indigo-600','text-white','border-indigo-500');
+        b.classList.add('border-gray-200');
+        const badge = b.querySelector('span:first-child');
+        if (badge) { badge.classList.remove('bg-white/20'); badge.classList.add('border','border-gray-300','text-gray-500'); }
+    });
+    btn.classList.add('selected','bg-indigo-600','text-white','border-indigo-500');
+    btn.classList.remove('border-gray-200');
+    const badge = btn.querySelector('span:first-child');
+    if (badge) { badge.classList.add('bg-white/20'); badge.classList.remove('border','border-gray-300','text-gray-500'); }
+}
+
+function submitQuiz() {
+    clearInterval(quizInterval);
+    document.getElementById('sct-quiz-answering').classList.add('hidden');
+    document.getElementById('sct-quiz-submitted').classList.remove('hidden');
+    showToast('答卷已提交！得分：2/3');
+}
+
+// ── 弹幕 ─────────────────────────────────────────────────
+function updateCharCount(ta) {
+    const remaining = 200 - ta.value.length;
+    const el = document.getElementById('char-count');
+    if (el) el.textContent = `剩余 ${remaining}/200 字`;
+}
+
+function sendDanmaku() {
+    const ta = document.getElementById('danmaku-input');
+    const anon = document.getElementById('anon-check').checked;
+    if (!ta.value.trim()) { showToast('请输入弹幕内容'); return; }
+    ta.value = '';
+    updateCharCount(ta);
+    showToast(anon ? '弹幕已匿名发送给教师' : '弹幕已发送给教师');
+}
+
+// ── 弹窗 ─────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+const MODALS = ['modal-history','modal-pdf-browser','modal-pdf-view','modal-note-editor','modal-profile','modal-student-classroom'];
+MODALS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', e => { if (e.target === el) closeModal(id); });
+});
+
+// ── 聊天 ─────────────────────────────────────────────────
+function openConvDetail() {
+    document.getElementById('student-conv-placeholder').classList.add('hidden');
+    document.getElementById('student-conv-detail').classList.remove('hidden');
+}
+function closeConvDetail() {
+    document.getElementById('student-conv-detail').classList.add('hidden');
+    document.getElementById('student-conv-placeholder').classList.remove('hidden');
+}
+
+// ── Toast ─────────────────────────────────────────────────
+let _toastTimer = null;
+function showToast(msg) {
+    const el = document.getElementById('toast');
+    document.getElementById('toast-text').textContent = msg;
+    el.classList.remove('hidden');
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => el.classList.add('hidden'), 2500);
+}
+
+// ── 日历 ─────────────────────────────────────────────────
+function renderCalendar() {
+    const grid = document.getElementById('cal-grid');
+    if (!grid) return;
+    const year = 2026, month = 4;
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const dotDays = new Set([10, 12, 14, 15, 20]);
+    const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+    let html = '<div class="grid grid-cols-7 gap-0.5 text-center mb-1">';
+    ['日','一','二','三','四','五','六'].forEach(d => { html += `<div class="text-[10px] text-gray-400 py-1 font-medium">${d}</div>`; });
+    html += '</div><div class="grid grid-cols-7 gap-0.5">';
+    for (let i = 0; i < startOffset; i++) html += '<div></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+        html += `<div class="cal-day text-[11px] text-center ${d===15?'today text-blue-700':'text-gray-700'} ${dotDays.has(d)?'has-dot':''}">${d}</div>`;
+    }
+    html += '</div>';
+    grid.innerHTML = html;
+}
+renderCalendar();
+
+// 初始化：只显示课程页
+document.querySelectorAll('.page').forEach(p => { p.style.display = 'none'; p.classList.remove('active'); });
+const initPage = document.getElementById('page-courses');
+initPage.style.display = 'flex';
+initPage.classList.add('active');
+</script>
+</body>
+</html>

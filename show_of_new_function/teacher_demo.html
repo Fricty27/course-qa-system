@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CourseQA · 教师端演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { font-family: "Microsoft YaHei", system-ui, sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .page { display: none; }
+        .page.active { display: flex; }
+        .note-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px -4px rgba(0,0,0,0.10); }
+        .note-card { transition: transform 0.2s, box-shadow 0.2s; }
+        .modal-bg { display: none; }
+        .modal-bg.open { display: flex; }
+        .group-hover-show { opacity: 0; transition: opacity 0.15s; }
+        .item-row:hover .group-hover-show { opacity: 1; }
+        .cal-day { min-height: 52px; border-radius: 8px; padding: 4px 6px; cursor: pointer; }
+        .cal-day:hover { background: #f1f5f9; }
+        .cal-day.today { background: #eff6ff; font-weight: 700; }
+        .cal-day.has-dot::after { content:''; display:block; width:5px; height:5px; border-radius:50%; background:#3b82f6; margin: 2px auto 0; }
+        @keyframes progress-anim { from{width:0%} to{width:100%} }
+        .progress-demo { animation: progress-anim 2s ease-in-out forwards; }
+        @keyframes blink-live { 0%,100%{opacity:1} 50%{opacity:0.35} }
+        .live-dot { animation: blink-live 1.8s ease-in-out infinite; }
+        .ct-tab-active { background:#4f46e5; color:white; }
+        .ct-tab-inactive { color:#4b5563; }
+        .ct-tab-inactive:hover { background:#f3f4f6; }
+        .bar-fill { transition: width 0.6s ease; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- ══ 左侧导航栏 ══ -->
+<div id="left-nav" class="fixed left-0 top-0 h-full bg-gray-900 flex flex-col overflow-hidden" style="width:200px;z-index:35">
+    <div class="flex flex-col items-center py-5 px-3 border-b border-white/10 shrink-0">
+        <div class="w-12 h-12 rounded-full overflow-hidden bg-blue-800 flex items-center justify-center mb-2 shrink-0">
+            <i class="fas fa-chalkboard-teacher text-white text-lg"></i>
+        </div>
+        <span class="text-white/80 text-sm font-medium truncate w-full text-center leading-tight mt-1">张教授</span>
+    </div>
+    <nav class="flex-1 py-2">
+        <button onclick="navigateTo('courses')" id="lnav-courses-btn"
+            class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white bg-white/20 hover:bg-white/25 transition-colors">
+            <i class="fas fa-chalkboard text-base shrink-0"></i>
+            <span class="text-sm whitespace-nowrap">我的课程</span>
+        </button>
+        <button onclick="navigateTo('msgs')" id="lnav-msgs-btn"
+            class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors relative">
+            <i class="fas fa-envelope text-base shrink-0"></i>
+            <span class="text-sm whitespace-nowrap">互动消息</span>
+            <span class="absolute top-2.5 left-7 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1">3</span>
+        </button>
+        <button onclick="navigateTo('notes')" id="lnav-notes-btn"
+            class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors">
+            <i class="fas fa-book-open text-base shrink-0"></i>
+            <span class="text-sm whitespace-nowrap">学生笔记</span>
+        </button>
+        <button onclick="navigateTo('settings')" id="lnav-settings-btn"
+            class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors">
+            <i class="fas fa-cog text-base shrink-0"></i>
+            <span class="text-sm whitespace-nowrap">设置</span>
+        </button>
+    </nav>
+    <button class="shrink-0 w-full flex items-center px-4 py-3 text-white/40 hover:text-white/70 border-t border-white/10 transition-colors">
+        <span class="text-xs mr-auto">收起</span>
+        <i class="fas fa-angle-double-left text-xs"></i>
+    </button>
+</div>
+
+<!-- ══ 主内容区 ══ -->
+<div id="main-wrap" style="margin-left:200px">
+
+<!-- 顶栏 -->
+<div class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+    <div class="flex items-center gap-3">
+        <span class="text-blue-600 font-bold text-xl">CourseQA</span>
+        <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">教师端</span>
+    </div>
+    <div class="flex items-center gap-3">
+        <button onclick="openModal('modal-classroom')"
+            class="relative px-4 py-2 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 text-sm font-medium flex items-center gap-2 shadow-sm">
+            <i class="fas fa-broadcast-tower text-xs"></i> 课堂互动
+            <span class="live-dot absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white"></span>
+        </button>
+        <button onclick="openModal('modal-profile')" class="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group">
+            <div class="w-9 h-9 rounded-full overflow-hidden border-2 border-blue-200 flex items-center justify-center bg-blue-50 shrink-0">
+                <i class="fas fa-chalkboard-teacher text-blue-400 text-sm"></i>
+            </div>
+            <span class="text-gray-700 text-sm font-medium group-hover:text-blue-600 transition-colors">张教授</span>
+            <i class="fas fa-pen text-gray-300 text-xs group-hover:text-blue-400 transition-colors"></i>
+        </button>
+        <button class="text-sm text-gray-400 hover:text-red-500 flex items-center gap-1 ml-1">
+            <i class="fas fa-sign-out-alt"></i> 退出
+        </button>
+    </div>
+</div>
+
+<!-- ══ 课程页 ══ -->
+<div id="page-courses" class="page active flex items-start">
+    <div class="flex-1 min-w-0 p-6">
+        <div class="flex gap-1 bg-white rounded-2xl p-1 shadow-sm mb-6 border border-gray-100">
+            <button onclick="switchTab('courses')" id="tab-courses"
+                class="tab-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all bg-blue-600 text-white">
+                <i class="fas fa-book mr-1"></i> 我的课程
+            </button>
+            <button onclick="switchTab('upload')" id="tab-upload"
+                class="tab-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all text-gray-600 hover:bg-gray-50">
+                <i class="fas fa-file-upload mr-1"></i> 教材管理
+            </button>
+            <button onclick="switchTab('history')" id="tab-history"
+                class="tab-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all text-gray-600 hover:bg-gray-50">
+                <i class="fas fa-history mr-1"></i> 提问记录
+            </button>
+        </div>
+
+        <!-- ── 我的课程 ── -->
+        <div id="content-courses" class="tab-content active">
+            <div class="bg-white rounded-3xl shadow-sm p-6 mb-5 border border-gray-100">
+                <h2 class="font-semibold text-lg mb-4">新建课程</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">课程名称</label>
+                        <input type="text" placeholder="例如：高等数学"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">课程码（学生用此码加入）</label>
+                        <input type="text" placeholder="例如：math101"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <button onclick="showToast('课程创建成功！课程码：phys404')"
+                    class="mt-4 px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium">
+                    <i class="fas fa-plus mr-1"></i> 创建课程
+                </button>
+            </div>
+            <!-- 课程列表 -->
+            <div class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="font-semibold text-lg">已创建课程</h2>
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm pointer-events-none"></i>
+                        <input type="text" placeholder="搜索课程名称或课程码…"
+                            class="pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-2xl bg-gray-50 focus:outline-none focus:border-blue-400 focus:bg-white transition-colors w-56">
+                    </div>
+                </div>
+                <div id="courses-list">
+                    <!-- 课程1 -->
+                    <div class="item-row flex items-center justify-between py-4 border-b border-gray-100">
+                        <div>
+                            <p class="font-medium text-gray-800">数学分析</p>
+                            <p class="text-sm text-gray-400">课程码：<span class="font-mono bg-gray-100 px-2 py-0.5 rounded">math101</span>
+                                <span class="ml-2 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg">28 名学生</span></p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="flex gap-1 group-hover-show">
+                                <button onclick="openModal('modal-members')" class="px-2.5 py-1.5 text-green-500 hover:bg-green-50 rounded-xl text-xs border border-green-100" title="查看成员"><i class="fas fa-users"></i></button>
+                                <button onclick="openModal('modal-rename')" class="px-2.5 py-1.5 text-blue-500 hover:bg-blue-50 rounded-xl text-xs border border-blue-100" title="重命名"><i class="fas fa-pencil-alt"></i></button>
+                                <button onclick="showToast('已删除课程')" class="px-2.5 py-1.5 text-red-400 hover:bg-red-50 rounded-xl text-xs border border-red-100" title="删除"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                            <button onclick="openModal('modal-classroom')" class="px-4 py-2 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 text-sm font-medium flex items-center gap-1.5 shrink-0">
+                                进入课程 <i class="fas fa-arrow-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- 课程2 -->
+                    <div class="item-row flex items-center justify-between py-4 border-b border-gray-100">
+                        <div>
+                            <p class="font-medium text-gray-800">计算机网络</p>
+                            <p class="text-sm text-gray-400">课程码：<span class="font-mono bg-gray-100 px-2 py-0.5 rounded">net202</span>
+                                <span class="ml-2 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg">35 名学生</span></p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="flex gap-1 group-hover-show">
+                                <button onclick="openModal('modal-members')" class="px-2.5 py-1.5 text-green-500 hover:bg-green-50 rounded-xl text-xs border border-green-100"><i class="fas fa-users"></i></button>
+                                <button onclick="openModal('modal-rename')" class="px-2.5 py-1.5 text-blue-500 hover:bg-blue-50 rounded-xl text-xs border border-blue-100"><i class="fas fa-pencil-alt"></i></button>
+                                <button onclick="showToast('已删除课程')" class="px-2.5 py-1.5 text-red-400 hover:bg-red-50 rounded-xl text-xs border border-red-100"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                            <button onclick="showToast('已进入计算机网络课程')" class="px-4 py-2 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 text-sm font-medium flex items-center gap-1.5 shrink-0">
+                                进入课程 <i class="fas fa-arrow-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- 课程3 -->
+                    <div class="item-row flex items-center justify-between py-4">
+                        <div>
+                            <p class="font-medium text-gray-800">数据结构与算法</p>
+                            <p class="text-sm text-gray-400">课程码：<span class="font-mono bg-gray-100 px-2 py-0.5 rounded">dsa303</span>
+                                <span class="ml-2 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-lg">42 名学生</span></p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="flex gap-1 group-hover-show">
+                                <button onclick="openModal('modal-members')" class="px-2.5 py-1.5 text-green-500 hover:bg-green-50 rounded-xl text-xs border border-green-100"><i class="fas fa-users"></i></button>
+                                <button onclick="openModal('modal-rename')" class="px-2.5 py-1.5 text-blue-500 hover:bg-blue-50 rounded-xl text-xs border border-blue-100"><i class="fas fa-pencil-alt"></i></button>
+                                <button onclick="showToast('已删除课程')" class="px-2.5 py-1.5 text-red-400 hover:bg-red-50 rounded-xl text-xs border border-red-100"><i class="fas fa-trash-alt"></i></button>
+                            </div>
+                            <button onclick="showToast('已进入数据结构与算法课程')" class="px-4 py-2 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 text-sm font-medium flex items-center gap-1.5 shrink-0">
+                                进入课程 <i class="fas fa-arrow-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── 教材管理 ── -->
+        <div id="content-upload" class="tab-content">
+            <div class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100 mb-5">
+                <h2 class="font-semibold text-lg mb-4">上传课程 PDF 教材</h2>
+                <div class="mb-4">
+                    <label class="block text-sm text-gray-600 mb-1">选择课程</label>
+                    <select class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500 bg-white">
+                        <option>数学分析（math101）</option>
+                        <option>计算机网络（net202）</option>
+                        <option>数据结构与算法（dsa303）</option>
+                    </select>
+                </div>
+                <div class="border-2 border-dashed border-gray-300 rounded-3xl p-8 text-center hover:border-blue-300 transition-colors">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+                    <p class="font-medium mb-2">选择 PDF 文件上传</p>
+                    <button onclick="simulateUpload()" class="px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700">
+                        <i class="fas fa-folder-open mr-1"></i> 选择文件
+                    </button>
+                    <div id="upload-status-wrap" class="hidden mt-3">
+                        <p id="upload-status-text" class="text-sm text-gray-500 mb-2">📤 正在上传 数学分析下册.pdf...</p>
+                        <div class="w-full bg-gray-100 rounded-full h-2">
+                            <div id="upload-bar" class="bg-blue-500 h-2 rounded-full" style="width:0%;transition:width 0.4s ease"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100">
+                <h2 class="font-semibold text-lg mb-4">已上传文档 · 数学分析</h2>
+                <div>
+                    <div class="item-row flex items-center justify-between py-3 border-b border-gray-100">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 bg-red-50 text-red-400 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-file-pdf"></i></div>
+                            <div class="min-w-0">
+                                <p class="font-medium text-sm text-gray-800">数学分析上册（第三版）.pdf</p>
+                                <p class="text-xs text-gray-400">18.4 MB · 386 页 · 已向量化 1,024 块</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 group-hover-show shrink-0 ml-3">
+                            <button onclick="openModal('modal-pdf')" class="px-3 py-2 text-blue-400 hover:bg-blue-50 rounded-xl text-sm border border-blue-100"><i class="fas fa-eye"></i></button>
+                            <button onclick="showToast('已删除文档')" class="px-3 py-2 text-red-400 hover:bg-red-50 rounded-xl text-sm border border-red-100"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                    <div class="item-row flex items-center justify-between py-3 border-b border-gray-100">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 bg-red-50 text-red-400 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-file-pdf"></i></div>
+                            <div class="min-w-0">
+                                <p class="font-medium text-sm text-gray-800">极限与连续性专题讲义.pdf</p>
+                                <p class="text-xs text-gray-400">3.2 MB · 48 页 · 已向量化 156 块</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 group-hover-show shrink-0 ml-3">
+                            <button onclick="openModal('modal-pdf')" class="px-3 py-2 text-blue-400 hover:bg-blue-50 rounded-xl text-sm border border-blue-100"><i class="fas fa-eye"></i></button>
+                            <button onclick="showToast('已删除文档')" class="px-3 py-2 text-red-400 hover:bg-red-50 rounded-xl text-sm border border-red-100"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                    <div class="item-row flex items-center justify-between py-3">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-9 h-9 bg-red-50 text-red-400 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-file-pdf"></i></div>
+                            <div class="min-w-0">
+                                <p class="font-medium text-sm text-gray-800">微积分习题集（附详解）.pdf</p>
+                                <p class="text-xs text-gray-400">9.7 MB · 215 页 · 已向量化 631 块</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 group-hover-show shrink-0 ml-3">
+                            <button onclick="openModal('modal-pdf')" class="px-3 py-2 text-blue-400 hover:bg-blue-50 rounded-xl text-sm border border-blue-100"><i class="fas fa-eye"></i></button>
+                            <button onclick="showToast('已删除文档')" class="px-3 py-2 text-red-400 hover:bg-red-50 rounded-xl text-sm border border-red-100"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── 提问记录 ── -->
+        <div id="content-history" class="tab-content">
+            <div class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100">
+                <div class="flex items-center gap-4 mb-5">
+                    <h2 class="font-semibold text-lg">学生提问记录</h2>
+                    <select class="px-4 py-2 border border-gray-300 rounded-xl text-sm bg-white focus:outline-none focus:border-blue-500">
+                        <option>数学分析（math101）</option>
+                        <option>计算机网络（net202）</option>
+                    </select>
+                </div>
+                <div class="mb-5">
+                    <div class="flex items-center gap-3 mb-3 px-1">
+                        <span class="text-xs font-medium text-gray-400">2026-05-15</span>
+                        <div class="flex-1 h-px bg-gray-100"></div>
+                    </div>
+                    <div class="border border-gray-100 rounded-2xl p-4 mb-2 item-row">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-blue-700">👤 李明同学</span>
+                            <div class="flex items-center gap-3"><span class="text-xs text-gray-400">09:32</span><button class="group-hover-show text-gray-300 hover:text-red-400 text-sm"><i class="fas fa-trash-alt"></i></button></div>
+                        </div>
+                        <p class="text-gray-800 font-medium mb-1">❓ 什么是柯西收敛准则？</p>
+                        <p class="text-gray-600 text-sm bg-blue-50 rounded-xl p-3 mt-2 leading-relaxed">💡 柯西收敛准则指出：数列 {aₙ} 收敛的充要条件是它是柯西数列，即对于任意 ε>0，存在 N，使得当 m,n>N 时，|aₘ - aₙ| &lt; ε。</p>
+                    </div>
+                    <div class="border border-gray-100 rounded-2xl p-4 mb-2 item-row">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-blue-700">👤 王芳同学</span>
+                            <div class="flex items-center gap-3"><span class="text-xs text-gray-400">10:17</span><button class="group-hover-show text-gray-300 hover:text-red-400 text-sm"><i class="fas fa-trash-alt"></i></button></div>
+                        </div>
+                        <p class="text-gray-800 font-medium mb-1">❓ 黎曼积分和勒贝格积分有什么区别？</p>
+                        <p class="text-gray-600 text-sm bg-blue-50 rounded-xl p-3 mt-2 leading-relaxed">💡 黎曼积分通过对定义域划分来定义，勒贝格积分通过对值域划分，适用范围更广。</p>
+                    </div>
+                    <div class="border border-gray-100 rounded-2xl p-4 item-row">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-blue-700">👤 陈浩同学</span>
+                            <div class="flex items-center gap-3"><span class="text-xs text-gray-400">14:05</span><button class="group-hover-show text-gray-300 hover:text-red-400 text-sm"><i class="fas fa-trash-alt"></i></button></div>
+                        </div>
+                        <p class="text-gray-800 font-medium mb-1">❓ 如何证明 √2 是无理数？</p>
+                        <p class="text-gray-600 text-sm bg-blue-50 rounded-xl p-3 mt-2 leading-relaxed">💡 假设 √2 = p/q（互质），则 2q² = p²，故 p 为偶数，令 p=2k 则 q 也为偶数，矛盾。</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center gap-3 mb-3 px-1">
+                        <span class="text-xs font-medium text-gray-400">2026-05-14</span>
+                        <div class="flex-1 h-px bg-gray-100"></div>
+                    </div>
+                    <div class="border border-gray-100 rounded-2xl p-4 item-row">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-blue-700">👤 赵雪同学</span>
+                            <div class="flex items-center gap-3"><span class="text-xs text-gray-400">16:30</span><button class="group-hover-show text-gray-300 hover:text-red-400 text-sm"><i class="fas fa-trash-alt"></i></button></div>
+                        </div>
+                        <p class="text-gray-800 font-medium mb-1">❓ 泰勒展开和麦克劳林展开有什么区别？</p>
+                        <p class="text-gray-600 text-sm bg-blue-50 rounded-xl p-3 mt-2 leading-relaxed">💡 麦克劳林展开是泰勒展开在 x₀=0 处的特例。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：日历 -->
+    <div class="w-64 shrink-0 border-l border-gray-100 bg-white overflow-y-auto" style="position:sticky;top:65px;max-height:calc(100vh - 65px)">
+        <div class="sticky top-0 z-10 bg-white border-b border-gray-100 px-3 py-2">
+            <div class="flex items-center justify-between">
+                <button class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500"><i class="fas fa-chevron-left text-xs"></i></button>
+                <span class="text-sm font-semibold text-gray-700">2026年5月</span>
+                <button class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500"><i class="fas fa-chevron-right text-xs"></i></button>
+            </div>
+            <p class="text-center text-[10px] text-gray-400 mt-1">双击具体日期以设置日程</p>
+        </div>
+        <div id="cal-grid" class="px-2 py-1 text-xs text-gray-500"></div>
+    </div>
+</div>
+
+<!-- ══ 消息页 ══ -->
+<div id="page-msgs" class="page" style="height:calc(100vh - 65px)">
+    <div class="shrink-0 bg-white border-b border-gray-200 flex items-center px-6 h-12 w-full">
+        <button class="flex items-center gap-1.5 px-4 h-12 text-sm font-medium border-b-2 border-blue-500 text-blue-600">
+            <i class="fas fa-comment-dots"></i> 私聊消息
+            <span class="min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center px-1 ml-0.5">3</span>
+        </button>
+        <button class="flex items-center gap-1.5 px-4 h-12 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+            <i class="fas fa-users"></i> 群组消息
+        </button>
+    </div>
+    <div class="flex flex-1 min-h-0 bg-gray-50 w-full" style="height:calc(100% - 48px)">
+        <div class="w-72 border-r border-gray-200 bg-white flex flex-col shrink-0">
+            <div class="px-4 py-2 text-xs text-gray-400 font-medium border-b border-gray-100">学生对话</div>
+            <div class="flex-1 overflow-y-auto">
+                <div onclick="openConvDetail()" class="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 bg-blue-50">
+                    <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0"><i class="fas fa-user-graduate text-base"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <p class="font-medium text-sm text-gray-800">李明</p>
+                            <span class="text-xs text-gray-400">09:41</span>
+                        </div>
+                        <p class="text-xs text-gray-500 truncate">老师，我有道题不太懂...</p>
+                    </div>
+                    <span class="min-w-[18px] h-4.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 shrink-0">2</span>
+                </div>
+                <div class="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100">
+                    <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0"><i class="fas fa-user-graduate text-base"></i></div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                            <p class="font-medium text-sm text-gray-800">王芳</p>
+                            <span class="text-xs text-gray-400">昨天</span>
+                        </div>
+                        <p class="text-xs text-gray-500 truncate">谢谢老师的解答！</p>
+                    </div>
+                    <span class="min-w-[18px] h-4.5 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1 shrink-0">1</span>
+                </div>
+            </div>
+        </div>
+        <div id="conv-detail-view" class="flex-1 flex flex-col min-h-0 bg-white hidden">
+            <div class="px-6 py-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
+                <button onclick="closeConvDetail()" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-arrow-left text-sm"></i></button>
+                <span class="font-medium text-gray-800">李明</span>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50">
+                <div class="flex justify-start">
+                    <div class="max-w-xs">
+                        <div class="bg-white rounded-2xl rounded-tl-sm px-4 py-2.5 shadow-sm border border-gray-100"><p class="text-sm text-gray-800">老师，极限 lim(x→0) sin(x)/x 为什么等于1？</p></div>
+                        <p class="text-xs text-gray-400 mt-1 ml-1">09:35</p>
+                    </div>
+                </div>
+                <div class="flex justify-end">
+                    <div class="max-w-xs">
+                        <div class="bg-blue-600 rounded-2xl rounded-tr-sm px-4 py-2.5"><p class="text-sm text-white">这是夹逼定理的经典应用，你看教材第68页的扇形面积夹逼证明。</p></div>
+                        <p class="text-xs text-gray-400 mt-1 text-right mr-1">09:38</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-4 py-3 border-t border-gray-100 shrink-0 bg-white">
+                <div class="flex gap-2 items-end">
+                    <textarea rows="1" placeholder="输入消息..." class="flex-1 px-4 py-2.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-blue-400 bg-gray-50 resize-none"></textarea>
+                    <button onclick="showToast('消息已发送')" class="px-5 py-2.5 bg-blue-600 text-white rounded-2xl text-sm hover:bg-blue-700 font-medium shrink-0">发送</button>
+                </div>
+            </div>
+        </div>
+        <div id="conv-placeholder" class="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3 bg-white">
+            <i class="fas fa-comments text-5xl text-gray-200"></i>
+            <p class="text-sm">选择一个对话，开始聊天</p>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 学生笔记页 ══ -->
+<div id="page-notes" class="page" style="height:calc(100vh - 65px);overflow-y:auto;background:#f9fafb">
+    <div class="max-w-5xl mx-auto p-6 w-full">
+        <div class="flex items-center justify-between mb-6">
+            <div><h2 class="text-xl font-bold text-gray-800">学生公开笔记</h2><p class="text-sm text-gray-400 mt-1">共 5 条公开笔记</p></div>
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+            <div class="note-card bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                <div class="h-1.5 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+                <div class="p-4 flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-7 h-7 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-user-graduate text-xs"></i></div>
+                        <span class="text-sm font-medium text-gray-800">李明</span>
+                        <span class="ml-auto text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg">数学分析上册 · 第68页</span>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-800 mb-1.5">极限夹逼定理笔记</p>
+                    <p class="text-sm text-gray-700 leading-relaxed" style="-webkit-line-clamp:4;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">夹逼定理：若 g(x)≤f(x)≤h(x)，且 lim g(x)=lim h(x)=L，则 lim f(x)=L。</p>
+                </div>
+                <div class="px-4 py-3 border-t border-gray-100">
+                    <div class="flex gap-2 items-center">
+                        <input type="text" placeholder="添加评论..." class="flex-1 text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 bg-gray-50">
+                        <button onclick="showToast('评论已发送')" class="text-xs px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium">回复</button>
+                    </div>
+                </div>
+            </div>
+            <div class="note-card bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                <div class="h-1.5 bg-gradient-to-r from-rose-400 to-pink-500"></div>
+                <div class="p-4 flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-7 h-7 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-user-graduate text-xs"></i></div>
+                        <span class="text-sm font-medium text-gray-800">王芳</span>
+                        <span class="ml-auto text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg">数学分析上册 · 第112页</span>
+                    </div>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <p class="text-sm font-semibold text-gray-800">导数与微分的关系</p>
+                        <span class="shrink-0 text-xs px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded font-medium flex items-center gap-0.5"><i class="fas fa-robot text-[9px]"></i> AI</span>
+                    </div>
+                    <p class="text-sm text-gray-700 leading-relaxed" style="-webkit-line-clamp:4;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">导数 f'(x) 描述函数瞬时变化率；微分 dy = f'(x)dx 是函数增量的线性主部。</p>
+                </div>
+                <div class="px-4 py-3 border-t border-gray-100">
+                    <div class="flex gap-2 items-center">
+                        <input type="text" placeholder="添加评论..." class="flex-1 text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 bg-gray-50">
+                        <button onclick="showToast('评论已发送')" class="text-xs px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium">回复</button>
+                    </div>
+                </div>
+            </div>
+            <div class="note-card bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col">
+                <div class="h-1.5 bg-gradient-to-r from-amber-400 to-orange-500"></div>
+                <div class="p-4 flex-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-7 h-7 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-user-graduate text-xs"></i></div>
+                        <span class="text-sm font-medium text-gray-800">赵雪</span>
+                        <span class="ml-auto text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg">数学分析上册 · 第204页</span>
+                    </div>
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <p class="text-sm font-semibold text-gray-800">泰勒公式总结</p>
+                        <span class="shrink-0 text-xs px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded font-medium flex items-center gap-0.5"><i class="fas fa-robot text-[9px]"></i> AI</span>
+                    </div>
+                    <p class="text-sm text-gray-700 leading-relaxed" style="-webkit-line-clamp:4;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">常用麦克劳林展开：eˣ=1+x+x²/2!+...；sin(x)=x-x³/3!+...；拉格朗日余项用于误差估计。</p>
+                </div>
+                <div class="px-4 py-3 border-t border-gray-100">
+                    <div class="flex gap-2 items-center">
+                        <input type="text" placeholder="添加评论..." class="flex-1 text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 bg-gray-50">
+                        <button onclick="showToast('评论已发送')" class="text-xs px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium">回复</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 设置页 ══ -->
+<div id="page-settings" class="page" style="height:calc(100vh - 65px);overflow-y:auto;background:#f9fafb">
+    <div class="max-w-2xl mx-auto p-6 w-full">
+        <h2 class="text-xl font-bold text-gray-800 mb-6">设置</h2>
+        <div class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100 space-y-5">
+            <div class="flex items-center gap-3 pb-4 border-b border-gray-100">
+                <div class="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-id-badge"></i></div>
+                <div><p class="text-xs text-gray-400">账号 ID</p><p class="font-mono text-sm font-medium text-gray-800">teacher1</p></div>
+            </div>
+            <button onclick="showToast('个人信息已保存')" class="px-6 py-2.5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium text-sm"><i class="fas fa-save mr-1"></i> 保存</button>
+        </div>
+    </div>
+</div>
+
+</div><!-- /main-wrap -->
+
+<!-- ══ 弹窗：课堂互动 ══ -->
+<div id="modal-classroom" class="modal-bg fixed inset-0 z-50 bg-black/50 items-center justify-center p-4" style="backdrop-filter:blur(2px)">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-indigo-600 rounded-2xl flex items-center justify-center">
+                    <i class="fas fa-broadcast-tower text-white text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-lg leading-tight">课堂互动</h3>
+                    <p class="text-xs text-gray-400">数学分析 · math101 · <span class="text-green-500 font-medium">28 名学生在线</span></p>
+                </div>
+            </div>
+            <button onclick="closeModal('modal-classroom')" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-times"></i></button>
+        </div>
+        <!-- Tab nav -->
+        <div class="flex gap-1.5 px-5 py-3 border-b border-gray-100 shrink-0 bg-gray-50/80">
+            <button onclick="switchCT('checkin')" id="ct-tab-checkin"
+                class="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ct-tab-active">
+                <i class="fas fa-hand-paper mr-1.5"></i> 签到
+            </button>
+            <button onclick="switchCT('quiz')" id="ct-tab-quiz"
+                class="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ct-tab-inactive">
+                <i class="fas fa-clipboard-list mr-1.5"></i> 测验
+            </button>
+            <button onclick="switchCT('danmaku')" id="ct-tab-danmaku"
+                class="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ct-tab-inactive">
+                <i class="fas fa-comments mr-1.5"></i> 弹幕
+                <span class="inline-flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[9px] rounded-full ml-1">3</span>
+            </button>
+        </div>
+
+        <!-- ── 签到内容 ── -->
+        <div id="ct-content-checkin" class="flex-1 overflow-y-auto min-h-0 p-5">
+            <!-- Active check-in panel -->
+            <div id="ct-ci-active" class="mb-4">
+                <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-5 mb-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <span class="live-dot w-2.5 h-2.5 bg-green-500 rounded-full inline-block"></span>
+                            <span class="font-semibold text-indigo-900">当前签到进行中</span>
+                            <span class="text-xs bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-lg">签到 #4</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-1.5 bg-white border border-indigo-200 rounded-xl px-3 py-1.5">
+                                <i class="fas fa-clock text-indigo-400 text-xs"></i>
+                                <span id="checkin-timer" class="font-mono font-bold text-indigo-800 text-lg">03:27</span>
+                            </div>
+                            <button onclick="endCheckin()" class="px-4 py-2 bg-red-500 text-white rounded-xl text-sm hover:bg-red-600 font-medium">
+                                <i class="fas fa-stop mr-1"></i> 结束签到
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-5">
+                        <!-- 签到码 -->
+                        <div class="flex flex-col items-center">
+                            <p class="text-xs text-indigo-500 font-medium mb-2 uppercase tracking-wide">签到码</p>
+                            <div class="bg-white border-2 border-indigo-300 rounded-2xl px-7 py-5 shadow-sm">
+                                <div class="text-4xl font-mono font-black text-indigo-800 tracking-[0.4em]">A7K3M9</div>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">学生输入6位签到码完成签到</p>
+                        </div>
+                        <!-- QR码 -->
+                        <div class="flex flex-col items-center">
+                            <p class="text-xs text-indigo-500 font-medium mb-2 uppercase tracking-wide">二维码</p>
+                            <div class="bg-white p-2.5 rounded-2xl border border-gray-200 shadow-sm">
+                                <svg viewBox="0 0 120 120" width="118" height="118">
+                                    <rect width="120" height="120" fill="white"/>
+                                    <!-- TL finder -->
+                                    <rect x="4" y="4" width="34" height="34" rx="3" fill="#312e81"/>
+                                    <rect x="9" y="9" width="24" height="24" rx="2" fill="white"/>
+                                    <rect x="14" y="14" width="14" height="14" rx="1" fill="#312e81"/>
+                                    <!-- TR finder -->
+                                    <rect x="82" y="4" width="34" height="34" rx="3" fill="#312e81"/>
+                                    <rect x="87" y="9" width="24" height="24" rx="2" fill="white"/>
+                                    <rect x="92" y="14" width="14" height="14" rx="1" fill="#312e81"/>
+                                    <!-- BL finder -->
+                                    <rect x="4" y="82" width="34" height="34" rx="3" fill="#312e81"/>
+                                    <rect x="9" y="87" width="24" height="24" rx="2" fill="white"/>
+                                    <rect x="14" y="92" width="14" height="14" rx="1" fill="#312e81"/>
+                                    <!-- data modules -->
+                                    <rect x="44" y="4" width="7" height="7" fill="#312e81"/>
+                                    <rect x="57" y="4" width="7" height="7" fill="#312e81"/>
+                                    <rect x="70" y="4" width="7" height="7" fill="#312e81"/>
+                                    <rect x="44" y="17" width="7" height="7" fill="#312e81"/>
+                                    <rect x="70" y="17" width="7" height="7" fill="#312e81"/>
+                                    <rect x="57" y="30" width="7" height="7" fill="#312e81"/>
+                                    <rect x="4" y="44" width="7" height="7" fill="#312e81"/>
+                                    <rect x="17" y="57" width="7" height="7" fill="#312e81"/>
+                                    <rect x="4" y="70" width="7" height="7" fill="#312e81"/>
+                                    <rect x="44" y="44" width="7" height="7" fill="#312e81"/>
+                                    <rect x="57" y="44" width="7" height="7" fill="#312e81"/>
+                                    <rect x="70" y="44" width="7" height="7" fill="#312e81"/>
+                                    <rect x="83" y="44" width="7" height="7" fill="#312e81"/>
+                                    <rect x="109" y="44" width="7" height="7" fill="#312e81"/>
+                                    <rect x="44" y="57" width="7" height="7" fill="#312e81"/>
+                                    <rect x="70" y="57" width="7" height="7" fill="#312e81"/>
+                                    <rect x="96" y="57" width="7" height="7" fill="#312e81"/>
+                                    <rect x="57" y="70" width="7" height="7" fill="#312e81"/>
+                                    <rect x="83" y="70" width="7" height="7" fill="#312e81"/>
+                                    <rect x="109" y="70" width="7" height="7" fill="#312e81"/>
+                                    <rect x="44" y="83" width="7" height="7" fill="#312e81"/>
+                                    <rect x="70" y="83" width="7" height="7" fill="#312e81"/>
+                                    <rect x="96" y="83" width="7" height="7" fill="#312e81"/>
+                                    <rect x="44" y="96" width="7" height="7" fill="#312e81"/>
+                                    <rect x="57" y="96" width="7" height="7" fill="#312e81"/>
+                                    <rect x="83" y="96" width="7" height="7" fill="#312e81"/>
+                                    <rect x="109" y="96" width="7" height="7" fill="#312e81"/>
+                                    <rect x="44" y="109" width="7" height="7" fill="#312e81"/>
+                                    <rect x="70" y="109" width="7" height="7" fill="#312e81"/>
+                                    <rect x="96" y="109" width="7" height="7" fill="#312e81"/>
+                                    <rect x="83" y="57" width="7" height="7" fill="#312e81"/>
+                                    <rect x="109" y="57" width="7" height="7" fill="#312e81"/>
+                                    <rect x="83" y="83" width="7" height="7" fill="#312e81"/>
+                                    <rect x="109" y="109" width="7" height="7" fill="#312e81"/>
+                                </svg>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">学生扫码签到</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 mt-4 pt-3 border-t border-indigo-100">
+                        <span class="text-xs text-indigo-600 font-medium">签到时长：</span>
+                        <div class="flex gap-1.5">
+                            <span class="px-3 py-1 text-xs bg-white text-gray-500 rounded-lg border border-gray-200 cursor-pointer hover:border-indigo-300">1分钟</span>
+                            <span class="px-3 py-1 text-xs bg-white text-gray-500 rounded-lg border border-gray-200 cursor-pointer hover:border-indigo-300">3分钟</span>
+                            <span class="px-3 py-1 text-xs bg-indigo-600 text-white rounded-lg font-medium">5分钟 ✓</span>
+                            <span class="px-3 py-1 text-xs bg-white text-gray-500 rounded-lg border border-gray-200 cursor-pointer hover:border-indigo-300">10分钟</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Student lists -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-white border border-green-200 rounded-2xl p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-semibold text-green-700 text-sm flex items-center gap-1.5"><i class="fas fa-check-circle text-green-500"></i> 已签到</span>
+                            <span class="text-sm font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-lg">17 / 28</span>
+                        </div>
+                        <div class="space-y-1 max-h-36 overflow-y-auto pr-1">
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">李明</span><span class="text-green-500 font-mono">09:31</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">王芳</span><span class="text-green-500 font-mono">09:32</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">陈浩</span><span class="text-green-500 font-mono">09:33</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">张晓宇</span><span class="text-green-500 font-mono">09:35</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">刘伟</span><span class="text-green-500 font-mono">09:36</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">孙丽</span><span class="text-green-500 font-mono">09:37</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">马超</span><span class="text-green-500 font-mono">09:38</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">朱敏</span><span class="text-green-500 font-mono">09:39</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">黄强</span><span class="text-green-500 font-mono">09:40</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">周杰</span><span class="text-green-500 font-mono">09:41</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">吴刚</span><span class="text-green-500 font-mono">09:42</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">郑洁</span><span class="text-green-500 font-mono">09:43</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">冯艳</span><span class="text-green-500 font-mono">09:44</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">宋涛</span><span class="text-green-500 font-mono">09:45</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">徐明</span><span class="text-green-500 font-mono">09:46</span></div>
+                            <div class="flex justify-between text-xs py-1 border-b border-gray-50"><span class="text-gray-700">林梅</span><span class="text-green-500 font-mono">09:47</span></div>
+                            <div class="flex justify-between text-xs py-1"><span class="text-gray-700">何敏</span><span class="text-amber-500 font-mono">09:48 迟到</span></div>
+                        </div>
+                    </div>
+                    <div class="bg-white border border-red-100 rounded-2xl p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-semibold text-red-500 text-sm flex items-center gap-1.5"><i class="fas fa-times-circle"></i> 未签到</span>
+                            <span class="text-sm font-bold text-red-400 bg-red-50 px-2 py-0.5 rounded-lg">11 人</span>
+                        </div>
+                        <div class="space-y-1 max-h-36 overflow-y-auto">
+                            <div class="text-xs py-1 border-b border-gray-50 text-gray-600">赵雪</div>
+                            <div class="text-xs py-1 border-b border-gray-50 text-gray-600">钱芳</div>
+                            <div class="text-xs py-1 border-b border-gray-50 text-gray-600">孙磊</div>
+                            <div class="text-xs py-1 border-b border-gray-50 text-gray-600">李强</div>
+                            <div class="text-xs py-1 border-b border-gray-50 text-gray-600">周波</div>
+                            <div class="text-xs py-1 border-b border-gray-50 text-gray-600">吴君</div>
+                            <div class="text-xs py-1 border-b border-gray-50 text-gray-600">郑浩</div>
+                            <div class="text-xs py-1 border-b border-gray-50 text-gray-600">施洁</div>
+                            <div class="text-xs py-1 border-b border-gray-50 text-gray-600">沈涛</div>
+                            <div class="text-xs py-1 border-b border-gray-50 text-gray-600">韩宇</div>
+                            <div class="text-xs py-1 text-gray-600">曾蕾</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Ended state (hidden) -->
+            <div id="ct-ci-ended" class="hidden mb-4">
+                <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 text-center mb-4">
+                    <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3"><i class="fas fa-check text-green-500 text-2xl"></i></div>
+                    <h4 class="font-semibold text-gray-800 mb-1">签到已结束</h4>
+                    <p class="text-2xl font-black text-green-600 mb-1">签到率 60.7%</p>
+                    <p class="text-sm text-gray-500">17 人已签到 · 1 人迟到 · 10 人缺勤</p>
+                    <div class="flex justify-center gap-3 mt-4">
+                        <button onclick="showCheckinSetup()" class="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-medium hover:bg-indigo-700"><i class="fas fa-plus mr-1"></i> 发起新签到</button>
+                        <button onclick="showToast('出勤数据已同步至教学档案')" class="px-5 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-50">同步至档案</button>
+                    </div>
+                </div>
+            </div>
+            <!-- Setup panel (hidden) -->
+            <div id="ct-ci-setup" class="hidden mb-4">
+                <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                    <h4 class="font-semibold text-gray-800 mb-4">发起新签到</h4>
+                    <div class="mb-4">
+                        <label class="text-sm text-gray-600 mb-2 block">签到时长</label>
+                        <div class="flex gap-2">
+                            <button class="px-5 py-2.5 text-sm border border-gray-200 rounded-xl hover:border-indigo-400 hover:text-indigo-600">1分钟</button>
+                            <button class="px-5 py-2.5 text-sm border border-gray-200 rounded-xl hover:border-indigo-400 hover:text-indigo-600">3分钟</button>
+                            <button class="px-5 py-2.5 text-sm bg-indigo-600 text-white rounded-xl font-medium">5分钟</button>
+                            <button class="px-5 py-2.5 text-sm border border-gray-200 rounded-xl hover:border-indigo-400 hover:text-indigo-600">10分钟</button>
+                        </div>
+                    </div>
+                    <button onclick="startCheckin()" class="px-6 py-3 bg-indigo-600 text-white rounded-2xl hover:bg-indigo-700 font-medium">
+                        <i class="fas fa-broadcast-tower mr-1"></i> 开始签到
+                    </button>
+                </div>
+            </div>
+            <!-- History -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-semibold text-gray-700 text-sm">历史签到记录</h4>
+                    <button onclick="showCheckinSetup()" class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-xl hover:bg-indigo-700 font-medium">
+                        <i class="fas fa-plus mr-1"></i> 发起新签到
+                    </button>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between py-2.5 px-4 bg-gray-50 rounded-xl text-sm hover:bg-gray-100 cursor-pointer">
+                        <span class="text-gray-500 text-xs font-mono">签到#3</span>
+                        <span class="text-gray-600">2026-05-15 · 09:30</span>
+                        <span class="text-green-600 font-medium text-xs">87.5% (24/28)</span>
+                        <span class="text-xs text-blue-500">详情</span>
+                    </div>
+                    <div class="flex items-center justify-between py-2.5 px-4 bg-gray-50 rounded-xl text-sm hover:bg-gray-100 cursor-pointer">
+                        <span class="text-gray-500 text-xs font-mono">签到#2</span>
+                        <span class="text-gray-600">2026-05-12 · 14:00</span>
+                        <span class="text-green-600 font-medium text-xs">92.8% (26/28)</span>
+                        <span class="text-xs text-blue-500">详情</span>
+                    </div>
+                    <div class="flex items-center justify-between py-2.5 px-4 bg-gray-50 rounded-xl text-sm hover:bg-gray-100 cursor-pointer">
+                        <span class="text-gray-500 text-xs font-mono">签到#1</span>
+                        <span class="text-gray-600">2026-05-08 · 08:30</span>
+                        <span class="text-amber-600 font-medium text-xs">67.8% (19/28)</span>
+                        <span class="text-xs text-blue-500">详情</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── 测验内容 ── -->
+        <div id="ct-content-quiz" class="flex-1 overflow-y-auto min-h-0 p-5 hidden">
+            <!-- Controls -->
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h4 class="font-semibold text-gray-800">随堂测验 · 第4次</h4>
+                    <p class="text-xs text-gray-400 mt-0.5">泰勒展开与余项 · AI辅助生成 · 3题</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="showQuizAIGen()" class="px-4 py-2 text-sm bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium flex items-center gap-1.5">
+                        <i class="fas fa-robot text-xs"></i> AI辅助生成
+                    </button>
+                    <button onclick="showQuizNew()" class="px-4 py-2 text-sm border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 flex items-center gap-1.5">
+                        <i class="fas fa-plus text-xs"></i> 新建测验
+                    </button>
+                </div>
+            </div>
+            <!-- AI Gen panel (hidden) -->
+            <div id="ct-quiz-ai-panel" class="hidden bg-purple-50 border border-purple-200 rounded-2xl p-5 mb-4">
+                <h5 class="font-semibold text-purple-800 mb-3 flex items-center gap-2"><i class="fas fa-robot"></i> AI 辅助出题</h5>
+                <div class="mb-3">
+                    <label class="text-xs text-purple-700 mb-1 block">选择教材范围</label>
+                    <select class="w-full px-3 py-2.5 border border-purple-200 rounded-xl text-sm bg-white focus:outline-none focus:border-purple-400">
+                        <option>数学分析上册（第三版）— 第200~210页（泰勒展开）</option>
+                        <option>极限与连续性专题讲义 — 全文</option>
+                    </select>
+                </div>
+                <div class="mb-3 flex gap-3">
+                    <div class="flex-1">
+                        <label class="text-xs text-purple-700 mb-1 block">题目数量</label>
+                        <select class="w-full px-3 py-2 border border-purple-200 rounded-xl text-sm bg-white"><option>3题</option><option>5题</option><option>10题</option></select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs text-purple-700 mb-1 block">题型</label>
+                        <select class="w-full px-3 py-2 border border-purple-200 rounded-xl text-sm bg-white"><option>单选+判断混合</option><option>纯单选</option><option>多选</option></select>
+                    </div>
+                </div>
+                <button onclick="hideQuizAIGen();showToast('AI正在根据教材内容生成题目...')" class="px-5 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-medium hover:bg-purple-700">
+                    <i class="fas fa-magic mr-1"></i> 生成题目
+                </button>
+                <button onclick="hideQuizAIGen()" class="ml-2 px-4 py-2.5 text-gray-500 text-sm hover:text-gray-700">取消</button>
+            </div>
+            <!-- Progress -->
+            <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-5">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-semibold text-blue-800">答题进度</span>
+                    <span class="text-sm font-bold text-blue-700">24 / 28 人已提交</span>
+                </div>
+                <div class="w-full bg-blue-100 rounded-full h-3 overflow-hidden">
+                    <div class="h-full bg-blue-500 rounded-full bar-fill" style="width:85.7%"></div>
+                </div>
+                <p class="text-xs text-blue-500 mt-1.5">85.7% 完成率 · 剩余 4 人未作答</p>
+            </div>
+            <!-- Q1 -->
+            <div class="bg-white border border-gray-100 rounded-2xl p-5 mb-4 shadow-sm">
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <span class="text-xs font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-lg">第 1 题 · 单选</span>
+                        <p class="text-sm font-semibold text-gray-800 mt-2">以下哪个表达式是泰勒展开中的<strong>皮亚诺余项</strong>？</p>
+                    </div>
+                    <div class="shrink-0 ml-4 text-right">
+                        <p class="text-xs text-gray-400">正确率</p>
+                        <p class="text-xl font-black text-green-600">75%</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 bg-green-100 text-green-700 rounded-lg text-xs flex items-center justify-center font-bold shrink-0">A</span>
+                        <div class="flex-1 bg-gray-50 rounded-xl h-7 overflow-hidden relative">
+                            <div class="h-full bg-green-300 rounded-xl bar-fill" style="width:75%"></div>
+                            <span class="absolute inset-0 flex items-center px-3 text-xs font-medium text-gray-800">o((x-x₀)ⁿ)</span>
+                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-green-700">18人 · 75%</span>
+                        </div>
+                        <i class="fas fa-check text-green-500 text-xs shrink-0"></i>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 bg-gray-100 text-gray-600 rounded-lg text-xs flex items-center justify-center font-bold shrink-0">B</span>
+                        <div class="flex-1 bg-gray-50 rounded-xl h-7 overflow-hidden relative">
+                            <div class="h-full bg-gray-300 rounded-xl bar-fill" style="width:17%"></div>
+                            <span class="absolute inset-0 flex items-center px-3 text-xs text-gray-700">f⁽ⁿ⁺¹⁾(ξ)/(n+1)! · (x-x₀)ⁿ⁺¹</span>
+                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">4人 · 17%</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 bg-gray-100 text-gray-600 rounded-lg text-xs flex items-center justify-center font-bold shrink-0">C</span>
+                        <div class="flex-1 bg-gray-50 rounded-xl h-7 overflow-hidden relative">
+                            <div class="h-full bg-gray-300 rounded-xl bar-fill" style="width:8%"></div>
+                            <span class="absolute inset-0 flex items-center px-3 text-xs text-gray-700">∫[x₀→x] f⁽ⁿ⁺¹⁾(t)/n! dt</span>
+                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">2人 · 8%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Q2 -->
+            <div class="bg-white border border-gray-100 rounded-2xl p-5 mb-4 shadow-sm">
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <span class="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg">第 2 题 · 判断</span>
+                        <p class="text-sm font-semibold text-gray-800 mt-2">皮亚诺余项要求函数在 x₀ 处有 <strong>n+1 阶</strong>导数。（判断对错）</p>
+                    </div>
+                    <div class="shrink-0 ml-4 text-right">
+                        <p class="text-xs text-gray-400">正确率</p>
+                        <p class="text-xl font-black text-amber-600">58%</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 bg-gray-100 text-gray-600 rounded-lg text-xs flex items-center justify-center font-bold shrink-0">正</span>
+                        <div class="flex-1 bg-gray-50 rounded-xl h-7 overflow-hidden relative">
+                            <div class="h-full bg-red-200 rounded-xl bar-fill" style="width:42%"></div>
+                            <span class="absolute inset-0 flex items-center px-3 text-xs text-gray-700">正确（选此项者有误）</span>
+                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">10人 · 42%</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 bg-green-100 text-green-700 rounded-lg text-xs flex items-center justify-center font-bold shrink-0">误</span>
+                        <div class="flex-1 bg-gray-50 rounded-xl h-7 overflow-hidden relative">
+                            <div class="h-full bg-green-300 rounded-xl bar-fill" style="width:58%"></div>
+                            <span class="absolute inset-0 flex items-center px-3 text-xs text-gray-700">错误（皮亚诺仅需n阶）✓</span>
+                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-green-700">14人 · 58%</span>
+                        </div>
+                        <i class="fas fa-check text-green-500 text-xs shrink-0"></i>
+                    </div>
+                </div>
+                <div class="mt-3 bg-amber-50 rounded-xl px-3 py-2 text-xs text-amber-700">
+                    <i class="fas fa-lightbulb mr-1"></i> <strong>知识点提示：</strong>皮亚诺余项仅要求函数在 x₀ 有 n 阶导数，条件比拉格朗日余项弱，建议重点讲解。
+                </div>
+            </div>
+            <!-- Q3 -->
+            <div class="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <span class="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-lg">第 3 题 · 多选</span>
+                        <p class="text-sm font-semibold text-gray-800 mt-2">下列哪些场景更适合使用<strong>拉格朗日余项</strong>？（多选）</p>
+                    </div>
+                    <div class="shrink-0 ml-4 text-right">
+                        <p class="text-xs text-gray-400">全对率</p>
+                        <p class="text-xl font-black text-green-600">50%</p>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 bg-green-100 text-green-700 rounded-lg text-xs flex items-center justify-center font-bold shrink-0">A</span>
+                        <div class="flex-1 bg-gray-50 rounded-xl h-7 overflow-hidden relative">
+                            <div class="h-full bg-green-300 rounded-xl bar-fill" style="width:83%"></div>
+                            <span class="absolute inset-0 flex items-center px-3 text-xs text-gray-800">估计截断误差上界</span>
+                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-green-700">20人 · 83%</span>
+                        </div>
+                        <i class="fas fa-check text-green-500 text-xs shrink-0"></i>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 bg-gray-100 text-gray-600 rounded-lg text-xs flex items-center justify-center font-bold shrink-0">B</span>
+                        <div class="flex-1 bg-gray-50 rounded-xl h-7 overflow-hidden relative">
+                            <div class="h-full bg-gray-300 rounded-xl bar-fill" style="width:63%"></div>
+                            <span class="absolute inset-0 flex items-center px-3 text-xs text-gray-700">讨论 x→x₀ 处的极限</span>
+                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">15人 · 63%</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 bg-green-100 text-green-700 rounded-lg text-xs flex items-center justify-center font-bold shrink-0">C</span>
+                        <div class="flex-1 bg-gray-50 rounded-xl h-7 overflow-hidden relative">
+                            <div class="h-full bg-green-300 rounded-xl bar-fill" style="width:75%"></div>
+                            <span class="absolute inset-0 flex items-center px-3 text-xs text-gray-800">数值计算误差界估计</span>
+                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-green-700">18人 · 75%</span>
+                        </div>
+                        <i class="fas fa-check text-green-500 text-xs shrink-0"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── 弹幕内容 ── -->
+        <div id="ct-content-danmaku" class="flex-1 overflow-y-auto min-h-0 p-5 hidden">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <div class="relative">
+                            <input type="checkbox" id="danmaku-toggle" class="sr-only" checked onchange="toggleDanmaku(this)">
+                            <div class="w-11 h-6 bg-green-500 rounded-full shadow-inner transition-colors" id="toggle-bg"></div>
+                            <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full shadow transition-transform" id="toggle-dot" style="transform:translateX(20px)"></div>
+                        </div>
+                        <span class="text-sm font-medium text-gray-700" id="danmaku-status-label">弹幕接收已开启</span>
+                    </label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select class="px-3 py-1.5 border border-gray-200 rounded-xl text-xs bg-white text-gray-600 focus:outline-none">
+                        <option>全部</option><option>未处理</option><option>已处理</option>
+                    </select>
+                    <select class="px-3 py-1.5 border border-gray-200 rounded-xl text-xs bg-white text-gray-600 focus:outline-none">
+                        <option>最新在前</option><option>最早在前</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Danmaku list -->
+            <div class="space-y-3">
+                <!-- Item 1: unhandled -->
+                <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <div class="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-user-graduate text-xs"></i></div>
+                                <span class="text-xs font-medium text-gray-700">李明</span>
+                                <span class="text-xs text-gray-400">09:41</span>
+                                <span class="w-2 h-2 bg-orange-400 rounded-full" title="未处理"></span>
+                            </div>
+                            <p class="text-sm text-gray-800">"老师，皮亚诺余项中说的'高阶无穷小'，是相对于 (x-x₀)ⁿ 的吗？怎么理解这个阶数关系？"</p>
+                        </div>
+                        <button onclick="markDanmaku(this)" class="ml-3 shrink-0 px-3 py-1.5 text-xs border border-indigo-200 text-indigo-600 rounded-xl hover:bg-indigo-50 font-medium whitespace-nowrap">标记处理</button>
+                    </div>
+                </div>
+                <!-- Item 2: handled -->
+                <div class="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <div class="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-user-graduate text-xs"></i></div>
+                                <span class="text-xs font-medium text-gray-700">王芳</span>
+                                <span class="text-xs text-gray-400">09:43</span>
+                                <span class="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded-lg"><i class="fas fa-check text-[9px]"></i> 已处理</span>
+                            </div>
+                            <p class="text-sm text-gray-500">"拉格朗日余项里的 ξ 是唯一确定的吗？不同的 x 对应不同的 ξ 吗？"</p>
+                        </div>
+                        <span class="ml-3 shrink-0 px-3 py-1.5 text-xs text-gray-400">已处理</span>
+                    </div>
+                </div>
+                <!-- Item 3: unhandled anonymous -->
+                <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <div class="w-6 h-6 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-user-secret text-xs"></i></div>
+                                <span class="text-xs font-medium text-gray-500">匿名同学</span>
+                                <span class="text-xs text-gray-400">09:44</span>
+                                <span class="w-2 h-2 bg-orange-400 rounded-full"></span>
+                            </div>
+                            <p class="text-sm text-gray-800">"积分余项的计算公式看起来很复杂，高数考试会考积分余项吗？"</p>
+                        </div>
+                        <button onclick="markDanmaku(this)" class="ml-3 shrink-0 px-3 py-1.5 text-xs border border-indigo-200 text-indigo-600 rounded-xl hover:bg-indigo-50 font-medium whitespace-nowrap">标记处理</button>
+                    </div>
+                </div>
+                <!-- Item 4: unhandled -->
+                <div class="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <div class="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-user-graduate text-xs"></i></div>
+                                <span class="text-xs font-medium text-gray-700">赵雪</span>
+                                <span class="text-xs text-gray-400">09:47</span>
+                                <span class="w-2 h-2 bg-orange-400 rounded-full"></span>
+                            </div>
+                            <p class="text-sm text-gray-800">"麦克劳林展开是泰勒展开的特例，但为什么书上推导方式不太一样？它们是完全等价的吗？"</p>
+                        </div>
+                        <button onclick="markDanmaku(this)" class="ml-3 shrink-0 px-3 py-1.5 text-xs border border-indigo-200 text-indigo-600 rounded-xl hover:bg-indigo-50 font-medium whitespace-nowrap">标记处理</button>
+                    </div>
+                </div>
+                <!-- Item 5: handled anonymous -->
+                <div class="bg-gray-50 border border-gray-100 rounded-2xl p-4">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-1.5">
+                                <div class="w-6 h-6 bg-gray-200 text-gray-500 rounded-full flex items-center justify-center shrink-0"><i class="fas fa-user-secret text-xs"></i></div>
+                                <span class="text-xs font-medium text-gray-500">匿名同学</span>
+                                <span class="text-xs text-gray-400">09:39</span>
+                                <span class="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded-lg"><i class="fas fa-check text-[9px]"></i> 已处理</span>
+                            </div>
+                            <p class="text-sm text-gray-500">"eˣ 的泰勒展开收敛域是整个实数轴，但 ln(1+x) 只在 -1&lt;x≤1 收敛，为什么差这么多？"</p>
+                        </div>
+                        <span class="ml-3 shrink-0 px-3 py-1.5 text-xs text-gray-400">已处理</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 弹窗：PDF 预览 ══ -->
+<div id="modal-pdf" class="modal-bg fixed inset-0 z-50 bg-black/50 items-center justify-center p-4" style="backdrop-filter:blur(2px)">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+            <h3 class="font-semibold">数学分析上册（第三版）.pdf</h3>
+            <button onclick="closeModal('modal-pdf')" class="text-gray-400 hover:text-gray-600 text-xl w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex-1 p-3 min-h-0 flex items-center justify-center bg-gray-50 rounded-b-3xl">
+            <div class="text-center text-gray-400">
+                <i class="fas fa-file-pdf text-6xl text-red-300 mb-4 block"></i>
+                <p class="font-medium">PDF 预览区域</p>
+                <p class="text-sm mt-1">（演示模式 · 实际运行时显示 PDF 内容）</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 弹窗：课程重命名 ══ -->
+<div id="modal-rename" class="modal-bg fixed inset-0 z-40 bg-black/30 items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+        <h3 class="font-semibold text-lg mb-4">修改课程名</h3>
+        <input type="text" value="数学分析" class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500 mb-4">
+        <div class="flex gap-3">
+            <button onclick="showToast('课程名已更新');closeModal('modal-rename')" class="flex-1 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium">确认</button>
+            <button onclick="closeModal('modal-rename')" class="flex-1 py-3 bg-gray-100 text-gray-600 rounded-2xl hover:bg-gray-200">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 弹窗：课程成员 ══ -->
+<div id="modal-members" class="modal-bg fixed inset-0 z-40 bg-black/30 items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+            <h3 class="font-semibold text-lg">课程成员 · 数学分析</h3>
+            <button onclick="closeModal('modal-members')" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="overflow-y-auto p-6 flex-1">
+            <p class="text-sm text-gray-500 mb-4">共 28 名学生</p>
+            <div class="grid grid-cols-3 gap-3">
+                <div class="flex flex-col items-center py-4 px-3 bg-gray-50 rounded-2xl">
+                    <div class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center"><i class="fas fa-user-graduate text-xl"></i></div>
+                    <p class="font-medium text-sm mt-2 text-center text-gray-800">李明</p>
+                    <p class="text-xs text-gray-400">2026-03-01</p>
+                    <button class="mt-2 px-3 py-1 bg-blue-50 text-blue-600 text-xs rounded-lg hover:bg-blue-100 border border-blue-100"><i class="fas fa-envelope text-xs mr-1"></i>发消息</button>
+                </div>
+                <div class="flex flex-col items-center py-4 px-3 bg-gray-50 rounded-2xl">
+                    <div class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center"><i class="fas fa-user-graduate text-xl"></i></div>
+                    <p class="font-medium text-sm mt-2 text-center text-gray-800">王芳</p>
+                    <p class="text-xs text-gray-400">2026-03-01</p>
+                    <button class="mt-2 px-3 py-1 bg-blue-50 text-blue-600 text-xs rounded-lg hover:bg-blue-100 border border-blue-100"><i class="fas fa-envelope text-xs mr-1"></i>发消息</button>
+                </div>
+                <div class="flex flex-col items-center py-4 px-3 bg-gray-50 rounded-2xl">
+                    <div class="w-14 h-14 bg-green-100 text-green-600 rounded-full flex items-center justify-center"><i class="fas fa-user-graduate text-xl"></i></div>
+                    <p class="font-medium text-sm mt-2 text-center text-gray-800">陈浩</p>
+                    <p class="text-xs text-gray-400">2026-03-02</p>
+                    <button class="mt-2 px-3 py-1 bg-blue-50 text-blue-600 text-xs rounded-lg hover:bg-blue-100 border border-blue-100"><i class="fas fa-envelope text-xs mr-1"></i>发消息</button>
+                </div>
+                <div class="flex flex-col items-center py-4 px-3 bg-gray-50 rounded-2xl text-gray-300">
+                    <div class="w-14 h-14 bg-gray-100 rounded-full flex items-center justify-center text-gray-300"><i class="fas fa-ellipsis-h text-xl"></i></div>
+                    <p class="text-sm mt-2 text-center text-gray-400">... 共 28 人</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 弹窗：个人设置 ══ -->
+<div id="modal-profile" class="modal-bg fixed inset-0 z-40 bg-black/30 items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="font-semibold text-lg">个人设置</h3>
+            <button onclick="closeModal('modal-profile')" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="flex flex-col items-center mb-5">
+            <div class="w-24 h-24 rounded-full overflow-hidden border-4 border-blue-100 cursor-pointer hover:opacity-80 bg-blue-50 flex items-center justify-center">
+                <i class="fas fa-chalkboard-teacher text-blue-300 text-4xl"></i>
+            </div>
+            <p class="text-xs text-gray-400 mt-2">点击头像更换图片</p>
+        </div>
+        <div class="mb-5">
+            <label class="block text-sm text-gray-600 mb-1">昵称</label>
+            <input type="text" value="张教授" class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+        </div>
+        <button onclick="showToast('设置已保存');closeModal('modal-profile')" class="w-full py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium"><i class="fas fa-save mr-1"></i> 保存设置</button>
+    </div>
+</div>
+
+<!-- Toast 提示 -->
+<div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] hidden">
+    <div class="bg-gray-800/90 text-white text-sm px-5 py-2.5 rounded-2xl shadow-xl backdrop-blur-sm" id="toast-text"></div>
+</div>
+
+<script>
+// ── 导航 ─────────────────────────────────────────────────
+const PAGES = ['courses', 'msgs', 'notes', 'settings'];
+function navigateTo(page) {
+    PAGES.forEach(p => {
+        const el = document.getElementById('page-' + p);
+        const btn = document.getElementById('lnav-' + p + '-btn');
+        if (!el) return;
+        if (p === page) {
+            el.classList.add('active');
+            if (btn) { btn.classList.add('bg-white/20','text-white'); btn.classList.remove('text-white/70'); }
+        } else {
+            el.classList.remove('active');
+            if (btn) { btn.classList.remove('bg-white/20','text-white'); btn.classList.add('text-white/70'); }
+        }
+    });
+    const msgsEl = document.getElementById('page-msgs');
+    if (msgsEl) {
+        if (page === 'msgs') { msgsEl.style.display = 'flex'; msgsEl.style.flexDirection = 'column'; }
+        else msgsEl.style.display = 'none';
+    }
+}
+
+// ── Tab 切换 ─────────────────────────────────────────────
+function switchTab(tab) {
+    ['courses','upload','history'].forEach(t => {
+        document.getElementById('content-' + t).classList.toggle('active', t === tab);
+        document.getElementById('tab-' + t).className =
+            'tab-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all ' +
+            (t === tab ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50');
+    });
+}
+
+// ── 课堂互动 Tab ─────────────────────────────────────────
+function switchCT(tab) {
+    ['checkin','quiz','danmaku'].forEach(t => {
+        const content = document.getElementById('ct-content-' + t);
+        const tabBtn = document.getElementById('ct-tab-' + t);
+        if (t === tab) {
+            content.classList.remove('hidden');
+            tabBtn.classList.add('ct-tab-active'); tabBtn.classList.remove('ct-tab-inactive');
+        } else {
+            content.classList.add('hidden');
+            tabBtn.classList.remove('ct-tab-active'); tabBtn.classList.add('ct-tab-inactive');
+        }
+    });
+}
+
+// ── 签到 ─────────────────────────────────────────────────
+let checkinSec = 207;
+let checkinInterval = null;
+function startCheckinTimer() {
+    if (checkinInterval) clearInterval(checkinInterval);
+    checkinInterval = setInterval(() => {
+        checkinSec = Math.max(0, checkinSec - 1);
+        const el = document.getElementById('checkin-timer');
+        if (el) el.textContent = String(Math.floor(checkinSec/60)).padStart(2,'0') + ':' + String(checkinSec%60).padStart(2,'0');
+        if (checkinSec === 0) { clearInterval(checkinInterval); endCheckin(); }
+    }, 1000);
+}
+function endCheckin() {
+    clearInterval(checkinInterval);
+    document.getElementById('ct-ci-active').classList.add('hidden');
+    document.getElementById('ct-ci-ended').classList.remove('hidden');
+}
+function startCheckin() {
+    checkinSec = 300;
+    document.getElementById('ct-ci-setup').classList.add('hidden');
+    document.getElementById('ct-ci-ended').classList.add('hidden');
+    document.getElementById('ct-ci-active').classList.remove('hidden');
+    startCheckinTimer();
+    showToast('签到已发起！签到码：B2X9K4');
+}
+function showCheckinSetup() {
+    document.getElementById('ct-ci-active').classList.add('hidden');
+    document.getElementById('ct-ci-ended').classList.add('hidden');
+    document.getElementById('ct-ci-setup').classList.remove('hidden');
+}
+// Start timer on load
+startCheckinTimer();
+
+// ── 测验 ─────────────────────────────────────────────────
+function showQuizAIGen() {
+    document.getElementById('ct-quiz-ai-panel').classList.remove('hidden');
+}
+function hideQuizAIGen() {
+    document.getElementById('ct-quiz-ai-panel').classList.add('hidden');
+}
+function showQuizNew() { showToast('打开测验编辑器（演示模式）'); }
+
+// ── 弹幕 ─────────────────────────────────────────────────
+function markDanmaku(btn) {
+    const card = btn.closest('.bg-white');
+    card.classList.remove('bg-white','shadow-sm');
+    card.classList.add('bg-gray-50');
+    btn.outerHTML = '<span class="ml-3 shrink-0 px-3 py-1.5 text-xs text-gray-400">已处理</span>';
+    // add handled badge
+    const dots = card.querySelectorAll('.w-2.h-2.bg-orange-400');
+    dots.forEach(d => {
+        d.outerHTML = '<span class="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded-lg"><i class="fas fa-check text-[9px]"></i> 已处理</span>';
+    });
+    showToast('已标记为处理');
+}
+function toggleDanmaku(cb) {
+    const bg = document.getElementById('toggle-bg');
+    const dot = document.getElementById('toggle-dot');
+    const label = document.getElementById('danmaku-status-label');
+    if (cb.checked) {
+        bg.classList.remove('bg-gray-300'); bg.classList.add('bg-green-500');
+        dot.style.transform = 'translateX(20px)';
+        label.textContent = '弹幕接收已开启';
+    } else {
+        bg.classList.add('bg-gray-300'); bg.classList.remove('bg-green-500');
+        dot.style.transform = 'translateX(0)';
+        label.textContent = '弹幕接收已关闭';
+    }
+}
+
+// ── 弹窗 ─────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+['modal-pdf','modal-rename','modal-members','modal-profile','modal-classroom'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('click', e => { if (e.target === el) closeModal(id); });
+});
+
+// ── 聊天 ─────────────────────────────────────────────────
+function openConvDetail() {
+    document.getElementById('conv-placeholder').classList.add('hidden');
+    document.getElementById('conv-detail-view').classList.remove('hidden');
+}
+function closeConvDetail() {
+    document.getElementById('conv-detail-view').classList.add('hidden');
+    document.getElementById('conv-placeholder').classList.remove('hidden');
+}
+
+// ── 上传模拟 ─────────────────────────────────────────────
+function simulateUpload() {
+    const wrap = document.getElementById('upload-status-wrap');
+    const bar = document.getElementById('upload-bar');
+    const text = document.getElementById('upload-status-text');
+    wrap.classList.remove('hidden');
+    bar.style.width = '0%';
+    text.textContent = '📤 正在上传 数学分析下册.pdf...';
+    let pct = 0;
+    const iv = setInterval(() => {
+        pct += Math.random() * 12;
+        if (pct >= 40 && pct < 80) text.textContent = `⚙️ 正在提取第 ${Math.floor((pct-40)*2)} 页 / 共 80 页...`;
+        if (pct >= 80) text.textContent = `🧠 向量化中... ${Math.floor((pct-80)*20)} / 200 块`;
+        if (pct >= 100) {
+            pct = 100; text.className = 'text-sm text-green-600 mb-2';
+            text.textContent = '✅ 上传成功！共 80 页，生成 200 个向量块'; clearInterval(iv);
+        }
+        bar.style.width = Math.min(pct, 100) + '%';
+    }, 150);
+}
+
+// ── Toast ─────────────────────────────────────────────────
+let _toastTimer = null;
+function showToast(msg) {
+    const el = document.getElementById('toast');
+    document.getElementById('toast-text').textContent = msg;
+    el.classList.remove('hidden');
+    if (_toastTimer) clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => el.classList.add('hidden'), 2500);
+}
+
+// ── 日历 ─────────────────────────────────────────────────
+function renderCalendar() {
+    const grid = document.getElementById('cal-grid');
+    if (!grid) return;
+    const year = 2026, month = 4;
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const dotDays = new Set([5, 12, 15, 20, 22]);
+    let html = '<div class="grid grid-cols-7 gap-0.5 text-center mb-1">';
+    ['日','一','二','三','四','五','六'].forEach(d => { html += `<div class="text-[10px] text-gray-400 py-1 font-medium">${d}</div>`; });
+    html += '</div><div class="grid grid-cols-7 gap-0.5">';
+    const offset = firstDay === 0 ? 6 : firstDay - 1 + 1;
+    for (let i = 0; i < offset; i++) html += '<div></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+        html += `<div class="cal-day text-[11px] text-center ${d===15?'today bg-blue-50 text-blue-700':'text-gray-700'} ${dotDays.has(d)?'has-dot':''}">${d}</div>`;
+    }
+    html += '</div>';
+    grid.innerHTML = html;
+}
+renderCalendar();
+
+document.getElementById('page-msgs').style.display = 'none';
+document.getElementById('page-notes').style.display = 'none';
+document.getElementById('page-settings').style.display = 'none';
+</script>
+</body>
+</html>

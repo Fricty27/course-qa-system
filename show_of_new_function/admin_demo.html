@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CourseQA · 管理员后台演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: "Microsoft YaHei", system-ui, sans-serif; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .modal-bg { display: none; }
+        .modal-bg.open { display: flex; }
+        .anav-btn { padding: 0.5rem 1.1rem; border-bottom: 2px solid transparent; transition: all 0.15s; font-size: 0.875rem; font-weight: 500; white-space: nowrap; cursor: pointer; }
+        .anav-btn.active { background: rgba(255,255,255,0.14); color: white; border-bottom-color: #c4b5fd; }
+        .anav-btn.inactive { color: rgba(255,255,255,0.62); background: transparent; border: none; }
+        .anav-btn.inactive:hover { color: white; background: rgba(255,255,255,0.08); }
+        .rev-tab-active { background: #7c3aed; color: white; }
+        .rev-tab-inactive { color: #6b7280; }
+        .rev-tab-inactive:hover { background: #f5f3ff; color: #6d28d9; }
+        .badge-active  { background:#dcfce7; color:#166534; }
+        .badge-disabled{ background:#fee2e2; color:#991b1b; }
+        .badge-pending { background:#fef9c3; color:#854d0e; }
+        .badge-approved{ background:#dcfce7; color:#166534; }
+        .badge-rejected{ background:#fee2e2; color:#991b1b; }
+        .badge-teacher { background:#dbeafe; color:#1e40af; }
+        .badge-student { background:#f0fdf4; color:#166534; }
+        .table-row:hover { background:#faf5ff; }
+        .chart-box { width:100%; height:260px; }
+        @keyframes slide-up { from{transform:translateY(16px);opacity:0} to{transform:translateY(0);opacity:1} }
+        .toast { animation: slide-up 0.25s ease; }
+        #confirm-delete-input:valid + #btn-confirm-delete { opacity:1; pointer-events:auto; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- ══ 顶部导航栏 ══ -->
+<div class="sticky top-0 z-40" style="background:linear-gradient(135deg,#3b0764 0%,#6d28d9 100%)">
+    <div class="px-6 flex items-center h-14 gap-4">
+        <div class="flex items-center gap-2 shrink-0 mr-4">
+            <span class="text-white font-bold text-lg tracking-tight">CourseQA</span>
+            <span class="bg-white/20 text-white/90 text-[11px] font-semibold px-2 py-0.5 rounded-full border border-white/20">管理后台</span>
+        </div>
+        <nav class="flex items-center gap-0.5 flex-1">
+            <button onclick="showPanel('users')"   id="anav-users"    class="anav-btn active"><i class="fas fa-users mr-1.5 text-xs"></i>用户管理</button>
+            <button onclick="showPanel('courses')" id="anav-courses"  class="anav-btn inactive"><i class="fas fa-chalkboard mr-1.5 text-xs"></i>课程管理</button>
+            <button onclick="showPanel('review')"  id="anav-review"   class="anav-btn inactive"><i class="fas fa-shield-halved mr-1.5 text-xs"></i>内容审核<span class="ml-1.5 bg-red-400 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">5</span></button>
+            <button onclick="showPanel('stats')"   id="anav-stats"    class="anav-btn inactive"><i class="fas fa-chart-line mr-1.5 text-xs"></i>数据统计</button>
+            <button onclick="showPanel('announce')" id="anav-announce" class="anav-btn inactive"><i class="fas fa-bullhorn mr-1.5 text-xs"></i>系统公告</button>
+        </nav>
+        <div class="flex items-center gap-2.5 shrink-0">
+            <span class="text-white/50 text-xs hidden lg:block">上次登录: 2026/05/16 09:23</span>
+            <div class="w-8 h-8 rounded-full bg-violet-400/25 flex items-center justify-center border border-white/20">
+                <i class="fas fa-user-shield text-white text-sm"></i>
+            </div>
+            <span class="text-white text-sm font-medium">超级管理员</span>
+            <button class="text-white/40 hover:text-white ml-1 transition-colors"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ 内容区 ══ -->
+<div class="max-w-7xl mx-auto px-6 py-6">
+
+<!-- ─────────────── 用户管理 ─────────────── -->
+<div id="panel-users" class="panel active">
+    <div class="flex items-center justify-between mb-5">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800">用户管理</h2>
+            <p class="text-sm text-gray-500 mt-0.5">共 186 名用户（教师 23 · 学生 163）</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input type="text" placeholder="搜索用户名或昵称" value="李" class="pl-8 pr-3 py-2 border border-gray-200 rounded-xl text-sm w-48 focus:outline-none focus:border-violet-400">
+            </div>
+            <select class="border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-600 focus:outline-none focus:border-violet-400 bg-white">
+                <option>全部角色</option>
+                <option selected>学生</option>
+                <option>教师</option>
+            </select>
+            <button class="px-4 py-2 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 transition-colors">
+                <i class="fas fa-search mr-1"></i>搜索
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-100">
+                    <th class="text-left text-xs text-gray-500 font-semibold px-5 py-3.5 w-10">#</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">用户名</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">昵称</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">角色</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">注册时间</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">状态</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="table-row border-b border-gray-50" id="urow-1">
+                    <td class="px-5 py-3.5 text-sm text-gray-400">1</td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 font-bold text-sm">李</div><div><p class="text-sm font-medium text-gray-800">limingg</p><p class="text-xs text-gray-400">ID: 10024</p></div></div></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-700">李明</td>
+                    <td class="px-3 py-3.5"><span class="badge-student text-xs font-medium px-2.5 py-1 rounded-full">学生</span></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-500">2025/09/02</td>
+                    <td class="px-3 py-3.5"><span id="ustatus-1" class="badge-active text-xs font-medium px-2.5 py-1 rounded-full">正常</span></td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-1.5">
+                        <button onclick="toggleUser(1)" class="px-2.5 py-1.5 border border-orange-200 text-orange-600 rounded-lg text-xs hover:bg-orange-50 transition-colors font-medium" id="ubtn-disable-1"><i class="fas fa-ban mr-1"></i>禁用</button>
+                        <button onclick="openResetPwd('limingg')" class="px-2.5 py-1.5 border border-blue-200 text-blue-600 rounded-lg text-xs hover:bg-blue-50 transition-colors font-medium"><i class="fas fa-key mr-1"></i>重置密码</button>
+                        <button onclick="openDeleteUser('limingg',1)" class="px-2.5 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除</button>
+                    </div></td>
+                </tr>
+                <tr class="table-row border-b border-gray-50" id="urow-2">
+                    <td class="px-5 py-3.5 text-sm text-gray-400">2</td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-600 font-bold text-sm">王</div><div><p class="text-sm font-medium text-gray-800">wangfang</p><p class="text-xs text-gray-400">ID: 10031</p></div></div></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-700">王芳</td>
+                    <td class="px-3 py-3.5"><span class="badge-student text-xs font-medium px-2.5 py-1 rounded-full">学生</span></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-500">2025/09/05</td>
+                    <td class="px-3 py-3.5"><span id="ustatus-2" class="badge-active text-xs font-medium px-2.5 py-1 rounded-full">正常</span></td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-1.5">
+                        <button onclick="toggleUser(2)" class="px-2.5 py-1.5 border border-orange-200 text-orange-600 rounded-lg text-xs hover:bg-orange-50 transition-colors font-medium" id="ubtn-disable-2"><i class="fas fa-ban mr-1"></i>禁用</button>
+                        <button onclick="openResetPwd('wangfang')" class="px-2.5 py-1.5 border border-blue-200 text-blue-600 rounded-lg text-xs hover:bg-blue-50 transition-colors font-medium"><i class="fas fa-key mr-1"></i>重置密码</button>
+                        <button onclick="openDeleteUser('wangfang',2)" class="px-2.5 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除</button>
+                    </div></td>
+                </tr>
+                <tr class="table-row border-b border-gray-50 bg-red-50/40" id="urow-3">
+                    <td class="px-5 py-3.5 text-sm text-gray-400">3</td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-sm">刘</div><div><p class="text-sm font-medium text-gray-500 line-through">liuxiaoyan</p><p class="text-xs text-gray-400">ID: 10047</p></div></div></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-400">刘晓燕</td>
+                    <td class="px-3 py-3.5"><span class="badge-student text-xs font-medium px-2.5 py-1 rounded-full">学生</span></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-400">2025/09/12</td>
+                    <td class="px-3 py-3.5"><span id="ustatus-3" class="badge-disabled text-xs font-medium px-2.5 py-1 rounded-full">已禁用</span></td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-1.5">
+                        <button onclick="toggleUser(3)" class="px-2.5 py-1.5 border border-green-200 text-green-600 rounded-lg text-xs hover:bg-green-50 transition-colors font-medium" id="ubtn-disable-3"><i class="fas fa-check-circle mr-1"></i>启用</button>
+                        <button onclick="openResetPwd('liuxiaoyan')" class="px-2.5 py-1.5 border border-blue-200 text-blue-600 rounded-lg text-xs hover:bg-blue-50 transition-colors font-medium"><i class="fas fa-key mr-1"></i>重置密码</button>
+                        <button onclick="openDeleteUser('liuxiaoyan',3)" class="px-2.5 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除</button>
+                    </div></td>
+                </tr>
+                <tr class="table-row border-b border-gray-50" id="urow-4">
+                    <td class="px-5 py-3.5 text-sm text-gray-400">4</td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">陈</div><div><p class="text-sm font-medium text-gray-800">chenjianguo</p><p class="text-xs text-gray-400">ID: 10058</p></div></div></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-700">陈建国</td>
+                    <td class="px-3 py-3.5"><span class="badge-student text-xs font-medium px-2.5 py-1 rounded-full">学生</span></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-500">2025/09/18</td>
+                    <td class="px-3 py-3.5"><span id="ustatus-4" class="badge-active text-xs font-medium px-2.5 py-1 rounded-full">正常</span></td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-1.5">
+                        <button onclick="toggleUser(4)" class="px-2.5 py-1.5 border border-orange-200 text-orange-600 rounded-lg text-xs hover:bg-orange-50 transition-colors font-medium" id="ubtn-disable-4"><i class="fas fa-ban mr-1"></i>禁用</button>
+                        <button onclick="openResetPwd('chenjianguo')" class="px-2.5 py-1.5 border border-blue-200 text-blue-600 rounded-lg text-xs hover:bg-blue-50 transition-colors font-medium"><i class="fas fa-key mr-1"></i>重置密码</button>
+                        <button onclick="openDeleteUser('chenjianguo',4)" class="px-2.5 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除</button>
+                    </div></td>
+                </tr>
+                <tr class="table-row border-b border-gray-50" id="urow-5">
+                    <td class="px-5 py-3.5 text-sm text-gray-400">5</td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm">赵</div><div><p class="text-sm font-medium text-gray-800">zhaomengqi</p><p class="text-xs text-gray-400">ID: 10072</p></div></div></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-700">赵梦琪</td>
+                    <td class="px-3 py-3.5"><span class="badge-student text-xs font-medium px-2.5 py-1 rounded-full">学生</span></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-500">2025/10/03</td>
+                    <td class="px-3 py-3.5"><span id="ustatus-5" class="badge-active text-xs font-medium px-2.5 py-1 rounded-full">正常</span></td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-1.5">
+                        <button onclick="toggleUser(5)" class="px-2.5 py-1.5 border border-orange-200 text-orange-600 rounded-lg text-xs hover:bg-orange-50 transition-colors font-medium" id="ubtn-disable-5"><i class="fas fa-ban mr-1"></i>禁用</button>
+                        <button onclick="openResetPwd('zhaomengqi')" class="px-2.5 py-1.5 border border-blue-200 text-blue-600 rounded-lg text-xs hover:bg-blue-50 transition-colors font-medium"><i class="fas fa-key mr-1"></i>重置密码</button>
+                        <button onclick="openDeleteUser('zhaomengqi',5)" class="px-2.5 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除</button>
+                    </div></td>
+                </tr>
+                <tr class="table-row border-b border-gray-50" id="urow-6">
+                    <td class="px-5 py-3.5 text-sm text-gray-400">6</td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 font-bold text-sm">孙</div><div><p class="text-sm font-medium text-gray-800">sunyue_stu</p><p class="text-xs text-gray-400">ID: 10089</p></div></div></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-700">孙悦</td>
+                    <td class="px-3 py-3.5"><span class="badge-student text-xs font-medium px-2.5 py-1 rounded-full">学生</span></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-500">2025/10/21</td>
+                    <td class="px-3 py-3.5"><span id="ustatus-6" class="badge-active text-xs font-medium px-2.5 py-1 rounded-full">正常</span></td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-1.5">
+                        <button onclick="toggleUser(6)" class="px-2.5 py-1.5 border border-orange-200 text-orange-600 rounded-lg text-xs hover:bg-orange-50 transition-colors font-medium" id="ubtn-disable-6"><i class="fas fa-ban mr-1"></i>禁用</button>
+                        <button onclick="openResetPwd('sunyue_stu')" class="px-2.5 py-1.5 border border-blue-200 text-blue-600 rounded-lg text-xs hover:bg-blue-50 transition-colors font-medium"><i class="fas fa-key mr-1"></i>重置密码</button>
+                        <button onclick="openDeleteUser('sunyue_stu',6)" class="px-2.5 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除</button>
+                    </div></td>
+                </tr>
+                <tr class="table-row" id="urow-7">
+                    <td class="px-5 py-3.5 text-sm text-gray-400">7</td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-bold text-sm">周</div><div><p class="text-sm font-medium text-gray-800">zhoulin2025</p><p class="text-xs text-gray-400">ID: 10103</p></div></div></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-700">周琳</td>
+                    <td class="px-3 py-3.5"><span class="badge-student text-xs font-medium px-2.5 py-1 rounded-full">学生</span></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-500">2025/11/08</td>
+                    <td class="px-3 py-3.5"><span id="ustatus-7" class="badge-active text-xs font-medium px-2.5 py-1 rounded-full">正常</span></td>
+                    <td class="px-3 py-3.5"><div class="flex items-center gap-1.5">
+                        <button onclick="toggleUser(7)" class="px-2.5 py-1.5 border border-orange-200 text-orange-600 rounded-lg text-xs hover:bg-orange-50 transition-colors font-medium" id="ubtn-disable-7"><i class="fas fa-ban mr-1"></i>禁用</button>
+                        <button onclick="openResetPwd('zhoulin2025')" class="px-2.5 py-1.5 border border-blue-200 text-blue-600 rounded-lg text-xs hover:bg-blue-50 transition-colors font-medium"><i class="fas fa-key mr-1"></i>重置密码</button>
+                        <button onclick="openDeleteUser('zhoulin2025',7)" class="px-2.5 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除</button>
+                    </div></td>
+                </tr>
+            </tbody>
+        </table>
+        <div class="flex items-center justify-between px-5 py-3 border-t border-gray-100 bg-gray-50/50">
+            <span class="text-xs text-gray-500">显示 1–7 / 共 163 条</span>
+            <div class="flex items-center gap-1">
+                <button class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100"><i class="fas fa-chevron-left text-xs"></i></button>
+                <button class="w-7 h-7 flex items-center justify-center rounded-lg bg-violet-600 text-white text-xs font-bold">1</button>
+                <button class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 text-xs hover:bg-gray-100">2</button>
+                <button class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-600 text-xs hover:bg-gray-100">3</button>
+                <span class="w-7 h-7 flex items-center justify-center text-gray-400 text-xs">…</span>
+                <button class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100"><i class="fas fa-chevron-right text-xs"></i></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─────────────── 课程管理 ─────────────── -->
+<div id="panel-courses" class="panel">
+    <!-- summary cards -->
+    <div class="grid grid-cols-4 gap-4 mb-5">
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center"><i class="fas fa-chalkboard text-violet-600"></i></div>
+            <div><p class="text-2xl font-black text-gray-800">31</p><p class="text-xs text-gray-500">课程总数</p></div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center"><i class="fas fa-users text-blue-600"></i></div>
+            <div><p class="text-2xl font-black text-gray-800">163</p><p class="text-xs text-gray-500">选课总人次</p></div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center"><i class="fas fa-file-pdf text-emerald-600"></i></div>
+            <div><p class="text-2xl font-black text-gray-800">128</p><p class="text-xs text-gray-500">上传文档数</p></div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center"><i class="fas fa-comments text-amber-600"></i></div>
+            <div><p class="text-2xl font-black text-gray-800">2,847</p><p class="text-xs text-gray-500">累计问答数</p></div>
+        </div>
+    </div>
+
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-bold text-gray-800">课程列表</h2>
+        <div class="relative">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+            <input type="text" placeholder="搜索课程名称或课程码" class="pl-8 pr-4 py-2 border border-gray-200 rounded-xl text-sm w-60 focus:outline-none focus:border-violet-400">
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <table class="w-full">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-100">
+                    <th class="text-left text-xs text-gray-500 font-semibold px-5 py-3.5">课程名称</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">课程码</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">所属教师</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">创建时间</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">成员数</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">文档数</th>
+                    <th class="text-left text-xs text-gray-500 font-semibold px-3 py-3.5">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="table-row border-b border-gray-50" id="crow-cs101">
+                    <td class="px-5 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-xl bg-violet-100 flex items-center justify-center"><i class="fas fa-code text-violet-600 text-sm"></i></div><span class="text-sm font-semibold text-gray-800">数据结构与算法</span></div></td>
+                    <td class="px-3 py-3.5"><code class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-lg text-xs font-mono">cs101</code></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-700">张教授</td>
+                    <td class="px-3 py-3.5 text-sm text-gray-500">2025/03/01</td>
+                    <td class="px-3 py-3.5"><span class="text-sm font-semibold text-gray-800">42</span><span class="text-xs text-gray-400 ml-1">人</span></td>
+                    <td class="px-3 py-3.5"><span class="text-sm font-semibold text-gray-800">7</span><span class="text-xs text-gray-400 ml-1">份</span></td>
+                    <td class="px-3 py-3.5"><button onclick="openDeleteCourse('数据结构与算法','cs101')" class="px-3 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除课程</button></td>
+                </tr>
+                <tr class="table-row border-b border-gray-50" id="crow-math201">
+                    <td class="px-5 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center"><i class="fas fa-infinity text-blue-600 text-sm"></i></div><span class="text-sm font-semibold text-gray-800">线性代数</span></div></td>
+                    <td class="px-3 py-3.5"><code class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-lg text-xs font-mono">math201</code></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-700">王教授</td>
+                    <td class="px-3 py-3.5 text-sm text-gray-500">2025/03/05</td>
+                    <td class="px-3 py-3.5"><span class="text-sm font-semibold text-gray-800">38</span><span class="text-xs text-gray-400 ml-1">人</span></td>
+                    <td class="px-3 py-3.5"><span class="text-sm font-semibold text-gray-800">5</span><span class="text-xs text-gray-400 ml-1">份</span></td>
+                    <td class="px-3 py-3.5"><button onclick="openDeleteCourse('线性代数','math201')" class="px-3 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除课程</button></td>
+                </tr>
+                <tr class="table-row border-b border-gray-50" id="crow-eng101">
+                    <td class="px-5 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center"><i class="fas fa-pen-nib text-emerald-600 text-sm"></i></div><span class="text-sm font-semibold text-gray-800">英语写作与交流</span></div></td>
+                    <td class="px-3 py-3.5"><code class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-lg text-xs font-mono">eng101</code></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-700">李教授</td>
+                    <td class="px-3 py-3.5 text-sm text-gray-500">2025/03/10</td>
+                    <td class="px-3 py-3.5"><span class="text-sm font-semibold text-gray-800">29</span><span class="text-xs text-gray-400 ml-1">人</span></td>
+                    <td class="px-3 py-3.5"><span class="text-sm font-semibold text-gray-800">3</span><span class="text-xs text-gray-400 ml-1">份</span></td>
+                    <td class="px-3 py-3.5"><button onclick="openDeleteCourse('英语写作与交流','eng101')" class="px-3 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除课程</button></td>
+                </tr>
+                <tr class="table-row border-b border-gray-50" id="crow-os301">
+                    <td class="px-5 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center"><i class="fas fa-microchip text-orange-600 text-sm"></i></div><span class="text-sm font-semibold text-gray-800">操作系统原理</span></div></td>
+                    <td class="px-3 py-3.5"><code class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-lg text-xs font-mono">os301</code></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-700">张教授</td>
+                    <td class="px-3 py-3.5 text-sm text-gray-500">2025/03/15</td>
+                    <td class="px-3 py-3.5"><span class="text-sm font-semibold text-gray-800">51</span><span class="text-xs text-gray-400 ml-1">人</span></td>
+                    <td class="px-3 py-3.5"><span class="text-sm font-semibold text-gray-800">9</span><span class="text-xs text-gray-400 ml-1">份</span></td>
+                    <td class="px-3 py-3.5"><button onclick="openDeleteCourse('操作系统原理','os301')" class="px-3 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除课程</button></td>
+                </tr>
+                <tr class="table-row" id="crow-net201">
+                    <td class="px-5 py-3.5"><div class="flex items-center gap-2.5"><div class="w-8 h-8 rounded-xl bg-sky-100 flex items-center justify-center"><i class="fas fa-network-wired text-sky-600 text-sm"></i></div><span class="text-sm font-semibold text-gray-800">计算机网络</span></div></td>
+                    <td class="px-3 py-3.5"><code class="bg-gray-100 text-gray-700 px-2 py-0.5 rounded-lg text-xs font-mono">net201</code></td>
+                    <td class="px-3 py-3.5 text-sm text-gray-700">王教授</td>
+                    <td class="px-3 py-3.5 text-sm text-gray-500">2025/04/01</td>
+                    <td class="px-3 py-3.5"><span class="text-sm font-semibold text-gray-800">23</span><span class="text-xs text-gray-400 ml-1">人</span></td>
+                    <td class="px-3 py-3.5"><span class="text-sm font-semibold text-gray-800">4</span><span class="text-xs text-gray-400 ml-1">份</span></td>
+                    <td class="px-3 py-3.5"><button onclick="openDeleteCourse('计算机网络','net201')" class="px-3 py-1.5 border border-red-200 text-red-500 rounded-lg text-xs hover:bg-red-50 transition-colors font-medium"><i class="fas fa-trash-alt mr-1"></i>删除课程</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <p class="text-xs text-gray-400 mt-3 text-right">删除课程将同步清除所有文档向量、提问记录、群组消息及选课关系，此操作不可撤销。</p>
+</div>
+
+<!-- ─────────────── 内容审核 ─────────────── -->
+<div id="panel-review" class="panel">
+    <div class="flex items-center justify-between mb-5">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800">内容审核</h2>
+            <p class="text-sm text-gray-500 mt-0.5">待审核内容 5 条（提问记录 3 · 公开笔记 2）</p>
+        </div>
+        <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-1">
+            <button onclick="switchRevTab('qa')" id="revtab-qa" class="rev-tab-active px-4 py-1.5 rounded-lg text-sm font-medium transition-all">待审核提问记录 <span class="ml-1 bg-white/25 text-xs px-1.5 py-0.5 rounded-full font-bold">3</span></button>
+            <button onclick="switchRevTab('notes')" id="revtab-notes" class="rev-tab-inactive px-4 py-1.5 rounded-lg text-sm font-medium transition-all">待审核公开笔记 <span class="ml-1 bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5 rounded-full font-bold">2</span></button>
+        </div>
+    </div>
+
+    <!-- 提问记录 -->
+    <div id="rev-qa" class="space-y-3">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" id="rqa-1">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="badge-pending text-xs font-semibold px-2.5 py-0.5 rounded-full">待审核</span>
+                        <span class="text-xs text-gray-400">提问记录 #4821</span>
+                    </div>
+                    <p class="text-base font-semibold text-gray-800 mb-1">泰勒展开式的余项如何估计误差？</p>
+                    <div class="bg-gray-50 rounded-xl p-3 mb-3">
+                        <p class="text-xs text-gray-500 mb-1 font-medium">AI 回答摘要</p>
+                        <p class="text-sm text-gray-700 leading-relaxed">泰勒公式余项主要有拉格朗日余项和佩亚诺余项两种形式。拉格朗日余项给出余项的精确量级 Rₙ(x) = f⁽ⁿ⁺¹⁾(ξ)/(n+1)! · (x-x₀)ⁿ⁺¹，其中 ξ 在 x₀ 与 x 之间…</p>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs text-gray-400">
+                        <span><i class="fas fa-user mr-1"></i>李明（limingg）</span>
+                        <span><i class="fas fa-chalkboard mr-1"></i>线性代数</span>
+                        <span><i class="fas fa-clock mr-1"></i>2026/05/16 10:32</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 shrink-0" id="rqa-1-actions">
+                    <button onclick="approveContent('rqa-1')" class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-medium hover:bg-emerald-600 transition-colors"><i class="fas fa-check mr-1.5"></i>通过</button>
+                    <button onclick="openReject('rqa-1','提问记录 #4821')" class="px-4 py-2 border border-red-200 text-red-500 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors"><i class="fas fa-times mr-1.5"></i>驳回</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" id="rqa-2">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="badge-pending text-xs font-semibold px-2.5 py-0.5 rounded-full">待审核</span>
+                        <span class="text-xs text-gray-400">提问记录 #4836</span>
+                    </div>
+                    <p class="text-base font-semibold text-gray-800 mb-1">操作系统中页面置换算法有哪些，各有什么优缺点？</p>
+                    <div class="bg-gray-50 rounded-xl p-3 mb-3">
+                        <p class="text-xs text-gray-500 mb-1 font-medium">AI 回答摘要</p>
+                        <p class="text-sm text-gray-700 leading-relaxed">常见页面置换算法包括：OPT（最优置换）、FIFO（先进先出）、LRU（最近最少使用）和 Clock 算法。OPT 理论最优但不可实现，LRU 性能接近 OPT 但实现开销较大…</p>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs text-gray-400">
+                        <span><i class="fas fa-user mr-1"></i>王芳（wangfang）</span>
+                        <span><i class="fas fa-chalkboard mr-1"></i>操作系统原理</span>
+                        <span><i class="fas fa-clock mr-1"></i>2026/05/16 11:15</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 shrink-0" id="rqa-2-actions">
+                    <button onclick="approveContent('rqa-2')" class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-medium hover:bg-emerald-600 transition-colors"><i class="fas fa-check mr-1.5"></i>通过</button>
+                    <button onclick="openReject('rqa-2','提问记录 #4836')" class="px-4 py-2 border border-red-200 text-red-500 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors"><i class="fas fa-times mr-1.5"></i>驳回</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" id="rqa-3">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="badge-pending text-xs font-semibold px-2.5 py-0.5 rounded-full">待审核</span>
+                        <span class="text-xs text-gray-400">提问记录 #4851</span>
+                    </div>
+                    <p class="text-base font-semibold text-gray-800 mb-1">快速排序的平均时间复杂度如何推导？</p>
+                    <div class="bg-gray-50 rounded-xl p-3 mb-3">
+                        <p class="text-xs text-gray-500 mb-1 font-medium">AI 回答摘要</p>
+                        <p class="text-sm text-gray-700 leading-relaxed">快速排序平均时间复杂度为 O(n log n)，可通过递推关系 T(n) = 2T(n/2) + O(n) 用主定理推导。最坏情况（已有序数组）退化为 O(n²)，可通过随机化选取基准改善…</p>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs text-gray-400">
+                        <span><i class="fas fa-user mr-1"></i>张伟（zhangwei_cs）</span>
+                        <span><i class="fas fa-chalkboard mr-1"></i>数据结构与算法</span>
+                        <span><i class="fas fa-clock mr-1"></i>2026/05/16 13:47</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 shrink-0" id="rqa-3-actions">
+                    <button onclick="approveContent('rqa-3')" class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-medium hover:bg-emerald-600 transition-colors"><i class="fas fa-check mr-1.5"></i>通过</button>
+                    <button onclick="openReject('rqa-3','提问记录 #4851')" class="px-4 py-2 border border-red-200 text-red-500 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors"><i class="fas fa-times mr-1.5"></i>驳回</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 公开笔记 -->
+    <div id="rev-notes" class="space-y-3 hidden">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" id="rnote-1">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="badge-pending text-xs font-semibold px-2.5 py-0.5 rounded-full">待审核</span>
+                        <span class="bg-purple-100 text-purple-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">公开笔记</span>
+                        <span class="text-xs text-gray-400">笔记 #312</span>
+                    </div>
+                    <p class="text-base font-semibold text-gray-800 mb-1">数据结构核心知识点梳理（期末复习版）</p>
+                    <div class="bg-gray-50 rounded-xl p-3 mb-3">
+                        <p class="text-xs text-gray-500 mb-1.5 font-medium">内容预览</p>
+                        <p class="text-sm text-gray-700 leading-relaxed">## 一、线性表<br/>线性表是具有相同数据类型的 n 个数据元素的有限序列…<br/><br/>## 二、树与二叉树<br/>二叉树的重要性质：第 i 层最多有 2^(i-1) 个结点…</p>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs text-gray-400">
+                        <span><i class="fas fa-user mr-1"></i>陈建国（chenjianguo）</span>
+                        <span><i class="fas fa-chalkboard mr-1"></i>数据结构与算法</span>
+                        <span><i class="fas fa-clock mr-1"></i>2026/05/15 22:14</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 shrink-0" id="rnote-1-actions">
+                    <button onclick="approveContent('rnote-1')" class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-medium hover:bg-emerald-600 transition-colors"><i class="fas fa-check mr-1.5"></i>通过</button>
+                    <button onclick="openReject('rnote-1','公开笔记 #312')" class="px-4 py-2 border border-red-200 text-red-500 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors"><i class="fas fa-times mr-1.5"></i>驳回</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" id="rnote-2">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="badge-pending text-xs font-semibold px-2.5 py-0.5 rounded-full">待审核</span>
+                        <span class="bg-purple-100 text-purple-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">公开笔记</span>
+                        <span class="text-xs text-gray-400">笔记 #318</span>
+                    </div>
+                    <p class="text-base font-semibold text-gray-800 mb-1">线性代数公式速查表（含例题）</p>
+                    <div class="bg-gray-50 rounded-xl p-3 mb-3">
+                        <p class="text-xs text-gray-500 mb-1.5 font-medium">内容预览</p>
+                        <p class="text-sm text-gray-700 leading-relaxed">**行列式**：D = Σ(-1)^τ a₁ₚ₁a₂ₚ₂…aₙₚₙ<br/>**矩阵的秩**：r(A) = r(Aᵀ)，r(AB) ≤ min(r(A), r(B))<br/>**特征值**：|A - λE| = 0 的根即为特征值…</p>
+                    </div>
+                    <div class="flex items-center gap-4 text-xs text-gray-400">
+                        <span><i class="fas fa-user mr-1"></i>赵梦琪（zhaomengqi）</span>
+                        <span><i class="fas fa-chalkboard mr-1"></i>线性代数</span>
+                        <span><i class="fas fa-clock mr-1"></i>2026/05/16 08:30</span>
+                    </div>
+                </div>
+                <div class="flex flex-col gap-2 shrink-0" id="rnote-2-actions">
+                    <button onclick="approveContent('rnote-2')" class="px-4 py-2 bg-emerald-500 text-white rounded-xl text-sm font-medium hover:bg-emerald-600 transition-colors"><i class="fas fa-check mr-1.5"></i>通过</button>
+                    <button onclick="openReject('rnote-2','公开笔记 #318')" class="px-4 py-2 border border-red-200 text-red-500 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors"><i class="fas fa-times mr-1.5"></i>驳回</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ─────────────── 数据统计 ─────────────── -->
+<div id="panel-stats" class="panel">
+    <div class="flex items-center justify-between mb-5">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800">数据统计</h2>
+            <p class="text-sm text-gray-500 mt-0.5">数据每 6 小时自动汇总一次，上次更新: 今天 12:00</p>
+        </div>
+        <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-1">
+            <button class="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-medium">按日</button>
+            <button class="px-3 py-1.5 text-gray-500 rounded-lg text-xs font-medium hover:bg-gray-100">按周</button>
+            <button class="px-3 py-1.5 text-gray-500 rounded-lg text-xs font-medium hover:bg-gray-100">按月</button>
+        </div>
+    </div>
+
+    <!-- summary cards -->
+    <div class="grid grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-gray-500 font-medium">累计用户</span>
+                <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded-lg">+3 今日</span>
+            </div>
+            <p class="text-3xl font-black text-gray-800">186</p>
+            <div class="w-full bg-gray-100 rounded-full h-1 mt-2"><div class="bg-violet-500 h-1 rounded-full" style="width:62%"></div></div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-gray-500 font-medium">课程总数</span>
+                <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded-lg">+4 本月</span>
+            </div>
+            <p class="text-3xl font-black text-gray-800">31</p>
+            <div class="w-full bg-gray-100 rounded-full h-1 mt-2"><div class="bg-blue-500 h-1 rounded-full" style="width:78%"></div></div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-gray-500 font-medium">总问答量</span>
+                <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded-lg">+47 今日</span>
+            </div>
+            <p class="text-3xl font-black text-gray-800">2,847</p>
+            <div class="w-full bg-gray-100 rounded-full h-1 mt-2"><div class="bg-amber-500 h-1 rounded-full" style="width:85%"></div></div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs text-gray-500 font-medium">平均签到率</span>
+                <span class="text-xs text-violet-600 font-semibold bg-violet-50 px-1.5 py-0.5 rounded-lg">近30天</span>
+            </div>
+            <p class="text-3xl font-black text-gray-800">87.3%</p>
+            <div class="w-full bg-gray-100 rounded-full h-1 mt-2"><div class="bg-emerald-500 h-1 rounded-full" style="width:87%"></div></div>
+        </div>
+    </div>
+
+    <!-- charts 2x2 -->
+    <div class="grid grid-cols-2 gap-5">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <p class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-chart-line text-violet-500 mr-1.5"></i>用户增长趋势（近7日新增）</p>
+            <div id="chart-user-growth" class="chart-box"></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <p class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-chart-bar text-blue-500 mr-1.5"></i>课程活跃度（近30日问答次数）</p>
+            <div id="chart-course-activity" class="chart-box"></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <p class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-chart-pie text-amber-500 mr-1.5"></i>问答热度分布</p>
+            <div id="chart-qa-heat" class="chart-box"></div>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <p class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-clipboard-check text-emerald-500 mr-1.5"></i>各课程签到率对比（近30日）</p>
+            <div id="chart-checkin" class="chart-box"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ─────────────── 系统公告 ─────────────── -->
+<div id="panel-announce" class="panel">
+    <div class="grid grid-cols-5 gap-6">
+        <!-- Editor -->
+        <div class="col-span-3">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-5">
+                <h3 class="text-base font-bold text-gray-800 mb-4"><i class="fas fa-edit text-violet-500 mr-2"></i>发布新公告</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">公告标题</label>
+                        <input type="text" id="ann-title" value="【维护公告】系统将于5月20日进行例行维护" class="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-violet-400">
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-xs font-semibold text-gray-600">公告内容（支持 Markdown）</label>
+                            <button onclick="togglePreview()" id="btn-preview" class="text-xs text-violet-600 hover:text-violet-800 font-medium"><i class="fas fa-eye mr-1"></i>预览</button>
+                        </div>
+                        <textarea id="ann-content" rows="9" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono focus:outline-none focus:border-violet-400 resize-none leading-relaxed"># 系统例行维护通知
+
+CourseQA 平台将于 **2026年5月20日 00:00—04:00** 进行例行维护升级。
+
+维护期间系统将**暂时无法访问**，请各位同学提前安排学习任务。
+
+## 本次维护内容
+
+- 数据库性能优化与索引重建
+- 向量检索引擎升级至最新版本
+- RAG 检索准确率改进
+- 安全补丁更新
+
+如有问题请联系系统管理员，感谢理解！</textarea>
+                        <div id="ann-preview" class="hidden w-full border border-violet-200 bg-violet-50 rounded-xl px-4 py-3 text-sm min-h-[200px] leading-relaxed text-gray-700">
+                            <p class="text-lg font-bold mb-2">系统例行维护通知</p>
+                            <p class="mb-2">CourseQA 平台将于 <strong>2026年5月20日 00:00—04:00</strong> 进行例行维护升级。</p>
+                            <p class="mb-2">维护期间系统将<strong>暂时无法访问</strong>，请各位同学提前安排学习任务。</p>
+                            <p class="font-semibold mb-1">本次维护内容</p>
+                            <ul class="list-disc pl-5 space-y-0.5 text-sm">
+                                <li>数据库性能优化与索引重建</li>
+                                <li>向量检索引擎升级至最新版本</li>
+                                <li>RAG 检索准确率改进</li>
+                                <li>安全补丁更新</li>
+                            </ul>
+                            <p class="mt-2">如有问题请联系系统管理员，感谢理解！</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">推送对象</label>
+                            <select class="border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 focus:outline-none focus:border-violet-400 bg-white">
+                                <option selected>全体用户</option>
+                                <option>仅教师</option>
+                                <option>仅学生</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 flex items-end justify-end">
+                            <button onclick="publishAnnouncement()" class="px-6 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors shadow-sm">
+                                <i class="fas fa-paper-plane mr-2"></i>立即发布
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="col-span-2">
+            <h3 class="text-base font-bold text-gray-800 mb-3"><i class="fas fa-history text-gray-400 mr-2"></i>已发布公告</h3>
+            <div class="space-y-3" id="ann-list">
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <p class="text-sm font-semibold text-gray-800 leading-snug">【维护公告】系统将于5月20日进行例行维护</p>
+                        <span class="shrink-0 bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">发布中</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-gray-400 mb-3">
+                        <span><i class="fas fa-calendar-alt mr-1"></i>2026/05/14 10:00</span>
+                        <span><i class="fas fa-users mr-1"></i>全体用户</span>
+                    </div>
+                    <button class="text-xs text-red-400 hover:text-red-600 font-medium transition-colors"><i class="fas fa-stop-circle mr-1"></i>撤回公告</button>
+                </div>
+                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 opacity-60">
+                    <div class="flex items-start justify-between gap-2 mb-2">
+                        <p class="text-sm font-semibold text-gray-600 leading-snug">【通知】期末考试答疑安排已更新，请查收</p>
+                        <span class="shrink-0 bg-gray-100 text-gray-500 text-xs font-semibold px-2 py-0.5 rounded-full">已撤回</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-xs text-gray-400 mb-3">
+                        <span><i class="fas fa-calendar-alt mr-1"></i>2026/05/08 09:30</span>
+                        <span><i class="fas fa-users mr-1"></i>全体用户</span>
+                    </div>
+                    <span class="text-xs text-gray-400"><i class="fas fa-info-circle mr-1"></i>已于 2026/05/12 撤回</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div><!-- end content -->
+
+<!-- ═══════════════ MODALS ═══════════════ -->
+
+<!-- 删除课程确认 -->
+<div id="modal-delete-course" class="modal-bg fixed inset-0 z-50 bg-black/50 items-center justify-center">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md mx-4 p-7">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-11 h-11 rounded-2xl bg-red-100 flex items-center justify-center shrink-0"><i class="fas fa-exclamation-triangle text-red-500 text-lg"></i></div>
+            <div>
+                <h3 class="text-lg font-bold text-gray-800">删除课程</h3>
+                <p class="text-sm text-gray-500">此操作不可撤销，请谨慎操作</p>
+            </div>
+        </div>
+        <div class="bg-red-50 border border-red-100 rounded-2xl p-4 mb-5">
+            <p class="text-sm text-gray-700 mb-1">即将删除课程：<strong id="dc-course-name" class="text-red-700">数据结构与算法</strong> <code id="dc-course-key" class="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded-lg font-mono ml-1">cs101</code></p>
+            <p class="text-xs text-red-600 mt-2">将同步删除：所有上传文档及向量数据、全部提问记录（含历史）、课程群组及消息、学生笔记、所有选课关系</p>
+        </div>
+        <div class="mb-5">
+            <label class="block text-sm font-semibold text-gray-700 mb-2">请在下方输入 <span class="text-red-600 font-bold">确认删除</span> 以继续</label>
+            <input type="text" id="dc-confirm-input" oninput="checkDeleteCourseInput()" placeholder="输入"确认删除"" class="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-red-400 transition-colors font-medium">
+        </div>
+        <div class="flex gap-3">
+            <button onclick="closeModal('modal-delete-course')" class="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50">取消</button>
+            <button id="btn-confirm-delete" onclick="confirmDeleteCourse()" disabled class="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-600 transition-colors">
+                <i class="fas fa-trash-alt mr-1.5"></i>确认删除
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 驳回内容 -->
+<div id="modal-reject" class="modal-bg fixed inset-0 z-50 bg-black/50 items-center justify-center">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm mx-4 p-7">
+        <h3 class="text-lg font-bold text-gray-800 mb-1">驳回内容</h3>
+        <p id="reject-target-label" class="text-sm text-gray-500 mb-4">提问记录 #4821</p>
+        <div class="mb-4">
+            <label class="block text-xs font-semibold text-gray-600 mb-1.5">驳回理由 <span class="text-red-500">*</span></label>
+            <textarea id="reject-reason" rows="4" placeholder="请填写驳回理由，系统将通过站内信通知内容发布者…" class="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-red-400 resize-none"></textarea>
+        </div>
+        <div class="flex gap-3">
+            <button onclick="closeModal('modal-reject')" class="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium">取消</button>
+            <button onclick="submitReject()" class="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors"><i class="fas fa-times mr-1.5"></i>确认驳回</button>
+        </div>
+    </div>
+</div>
+
+<!-- 重置密码 -->
+<div id="modal-reset-pwd" class="modal-bg fixed inset-0 z-50 bg-black/50 items-center justify-center">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm mx-4 p-7">
+        <div class="text-center mb-5">
+            <div class="w-14 h-14 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto mb-3"><i class="fas fa-key text-blue-600 text-2xl"></i></div>
+            <h3 class="text-lg font-bold text-gray-800">密码已重置</h3>
+            <p id="reset-pwd-username" class="text-sm text-gray-500 mt-1">用户: limingg</p>
+        </div>
+        <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-5 text-center">
+            <p class="text-xs text-gray-500 mb-2 font-medium">临时密码（一次性）</p>
+            <p id="reset-pwd-value" class="text-2xl font-black font-mono tracking-widest text-blue-700">Tmp@Kx7m</p>
+            <p class="text-xs text-gray-400 mt-2">用户登录后将被强制要求修改密码</p>
+        </div>
+        <p class="text-xs text-amber-600 bg-amber-50 rounded-xl px-3 py-2 mb-4"><i class="fas fa-exclamation-circle mr-1"></i>请通过站内信或其他方式将临时密码告知用户，关闭此窗口后将无法再次查看。</p>
+        <button onclick="closeModal('modal-reset-pwd')" class="w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700">我已记录，关闭</button>
+    </div>
+</div>
+
+<!-- 删除用户 -->
+<div id="modal-delete-user" class="modal-bg fixed inset-0 z-50 bg-black/50 items-center justify-center">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm mx-4 p-7">
+        <div class="flex items-center gap-3 mb-5">
+            <div class="w-11 h-11 rounded-2xl bg-red-100 flex items-center justify-center shrink-0"><i class="fas fa-user-times text-red-500 text-lg"></i></div>
+            <div><h3 class="text-lg font-bold text-gray-800">删除用户</h3><p class="text-sm text-gray-500">此操作不可撤销</p></div>
+        </div>
+        <p class="text-sm text-gray-700 mb-5">确认删除用户 <strong id="du-username" class="text-red-600">limingg</strong>？该账号及其所有数据（提问记录、笔记、消息）将被永久删除。</p>
+        <div class="flex gap-3">
+            <button onclick="closeModal('modal-delete-user')" class="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium">取消</button>
+            <button onclick="confirmDeleteUser()" class="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-colors"><i class="fas fa-trash-alt mr-1.5"></i>确认删除</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] hidden">
+    <div class="toast bg-gray-900 text-white px-5 py-3 rounded-2xl shadow-2xl text-sm font-medium flex items-center gap-2">
+        <i id="toast-icon" class="fas fa-check-circle text-green-400"></i>
+        <span id="toast-msg">操作成功</span>
+    </div>
+</div>
+
+<script>
+// ── State ──
+let currentDeleteCourseRow = null;
+let currentDeleteUserId = null;
+let currentRejectId = null;
+let chartsInited = false;
+
+// ── Navigation ──
+function showPanel(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.anav-btn').forEach(b => { b.classList.remove('active'); b.classList.add('inactive'); });
+    document.getElementById('panel-' + name).classList.add('active');
+    const btn = document.getElementById('anav-' + name);
+    btn.classList.add('active'); btn.classList.remove('inactive');
+    if (name === 'stats' && !chartsInited) { chartsInited = true; setTimeout(initCharts, 80); }
+}
+
+// ── Modal ──
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }));
+
+// ── Toast ──
+function showToast(msg, isError) {
+    const t = document.getElementById('toast'), icon = document.getElementById('toast-icon');
+    document.getElementById('toast-msg').textContent = msg;
+    icon.className = isError ? 'fas fa-exclamation-circle text-red-400' : 'fas fa-check-circle text-green-400';
+    t.classList.remove('hidden'); setTimeout(() => t.classList.add('hidden'), 2600);
+}
+
+// ── Review tabs ──
+function switchRevTab(tab) {
+    const isQa = tab === 'qa';
+    document.getElementById('rev-qa').classList.toggle('hidden', !isQa);
+    document.getElementById('rev-notes').classList.toggle('hidden', isQa);
+    const qaBtn = document.getElementById('revtab-qa'), nBtn = document.getElementById('revtab-notes');
+    qaBtn.className = (isQa ? 'rev-tab-active' : 'rev-tab-inactive') + ' px-4 py-1.5 rounded-lg text-sm font-medium transition-all';
+    nBtn.className = (!isQa ? 'rev-tab-active' : 'rev-tab-inactive') + ' px-4 py-1.5 rounded-lg text-sm font-medium transition-all';
+}
+
+// ── User actions ──
+const userStatuses = {1:true,2:true,3:false,4:true,5:true,6:true,7:true};
+function toggleUser(id) {
+    userStatuses[id] = !userStatuses[id];
+    const active = userStatuses[id];
+    const badge = document.getElementById('ustatus-' + id);
+    badge.className = (active ? 'badge-active' : 'badge-disabled') + ' text-xs font-medium px-2.5 py-1 rounded-full';
+    badge.textContent = active ? '正常' : '已禁用';
+    const btn = document.getElementById('ubtn-disable-' + id);
+    if (active) {
+        btn.className = 'px-2.5 py-1.5 border border-orange-200 text-orange-600 rounded-lg text-xs hover:bg-orange-50 transition-colors font-medium';
+        btn.innerHTML = '<i class="fas fa-ban mr-1"></i>禁用';
+        const row = document.getElementById('urow-' + id);
+        row.classList.remove('bg-red-50/40');
+    } else {
+        btn.className = 'px-2.5 py-1.5 border border-green-200 text-green-600 rounded-lg text-xs hover:bg-green-50 transition-colors font-medium';
+        btn.innerHTML = '<i class="fas fa-check-circle mr-1"></i>启用';
+        document.getElementById('urow-' + id).classList.add('bg-red-50/40');
+    }
+    showToast(active ? '账号已启用' : '账号已禁用');
+}
+
+function openResetPwd(username) {
+    const pwds = ['Tmp@Kx7m','Tmp@Bz9p','Tmp@Qr3w','Tmp@Nm6y','Tmp@Vt2x'];
+    document.getElementById('reset-pwd-username').textContent = '用户: ' + username;
+    document.getElementById('reset-pwd-value').textContent = pwds[Math.floor(Math.random()*pwds.length)];
+    openModal('modal-reset-pwd');
+}
+
+function openDeleteUser(username, id) {
+    document.getElementById('du-username').textContent = username;
+    currentDeleteUserId = id;
+    openModal('modal-delete-user');
+}
+
+function confirmDeleteUser() {
+    const row = document.getElementById('urow-' + currentDeleteUserId);
+    if (row) { row.style.transition='all 0.3s'; row.style.opacity='0'; row.style.transform='translateX(30px)'; setTimeout(()=>row.remove(),300); }
+    closeModal('modal-delete-user');
+    showToast('用户已删除');
+}
+
+// ── Course delete ──
+function openDeleteCourse(name, key) {
+    document.getElementById('dc-course-name').textContent = name;
+    document.getElementById('dc-course-key').textContent = key;
+    document.getElementById('dc-confirm-input').value = '';
+    document.getElementById('btn-confirm-delete').disabled = true;
+    currentDeleteCourseRow = 'crow-' + key;
+    openModal('modal-delete-course');
+}
+
+function checkDeleteCourseInput() {
+    const val = document.getElementById('dc-confirm-input').value;
+    document.getElementById('btn-confirm-delete').disabled = val !== '确认删除';
+}
+
+function confirmDeleteCourse() {
+    const row = document.getElementById(currentDeleteCourseRow);
+    if (row) { row.style.transition='all 0.3s'; row.style.opacity='0'; setTimeout(()=>row.remove(),300); }
+    closeModal('modal-delete-course');
+    showToast('课程及全部关联数据已删除');
+}
+
+// ── Content review ──
+function approveContent(itemId) {
+    const actions = document.getElementById(itemId + '-actions');
+    const card = document.getElementById(itemId);
+    const badge = card.querySelector('.badge-pending');
+    if (badge) { badge.className = 'badge-approved text-xs font-semibold px-2.5 py-0.5 rounded-full'; badge.textContent = '已通过'; }
+    if (actions) { actions.innerHTML = '<span class="text-emerald-600 text-sm font-semibold"><i class="fas fa-check-circle mr-1"></i>已通过</span>'; }
+    card.classList.add('opacity-60');
+    showToast('内容已通过审核');
+}
+
+function openReject(itemId, label) {
+    currentRejectId = itemId;
+    document.getElementById('reject-target-label').textContent = label;
+    document.getElementById('reject-reason').value = '';
+    openModal('modal-reject');
+}
+
+function submitReject() {
+    const reason = document.getElementById('reject-reason').value.trim();
+    if (!reason) { showToast('请填写驳回理由', true); return; }
+    const actions = document.getElementById(currentRejectId + '-actions');
+    const card = document.getElementById(currentRejectId);
+    const badge = card.querySelector('.badge-pending');
+    if (badge) { badge.className = 'badge-rejected text-xs font-semibold px-2.5 py-0.5 rounded-full'; badge.textContent = '已驳回'; }
+    if (actions) {
+        actions.innerHTML = '<div class="text-right"><span class="text-red-500 text-sm font-semibold"><i class="fas fa-times-circle mr-1"></i>已驳回</span><p class="text-xs text-gray-400 mt-1">站内信已发送</p></div>';
+    }
+    card.classList.add('opacity-60');
+    closeModal('modal-reject');
+    showToast('已驳回，站内信通知已发送');
+}
+
+// ── Announce ──
+function togglePreview() {
+    const ta = document.getElementById('ann-content');
+    const pv = document.getElementById('ann-preview');
+    const btn = document.getElementById('btn-preview');
+    const isEdit = !ta.classList.contains('hidden');
+    ta.classList.toggle('hidden', isEdit);
+    pv.classList.toggle('hidden', !isEdit);
+    btn.innerHTML = isEdit ? '<i class="fas fa-pencil-alt mr-1"></i>编辑' : '<i class="fas fa-eye mr-1"></i>预览';
+}
+
+function publishAnnouncement() {
+    const title = document.getElementById('ann-title').value.trim();
+    if (!title) { showToast('请填写公告标题', true); return; }
+    const list = document.getElementById('ann-list');
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const item = document.createElement('div');
+    item.className = 'bg-white rounded-2xl border border-violet-200 shadow-sm p-4';
+    item.innerHTML = `<div class="flex items-start justify-between gap-2 mb-2"><p class="text-sm font-semibold text-gray-800 leading-snug">${title}</p><span class="shrink-0 bg-emerald-100 text-emerald-700 text-xs font-semibold px-2 py-0.5 rounded-full">发布中</span></div><div class="flex items-center gap-3 text-xs text-gray-400 mb-3"><span><i class="fas fa-calendar-alt mr-1"></i>${dateStr}</span><span><i class="fas fa-users mr-1"></i>全体用户</span></div><button class="text-xs text-red-400 hover:text-red-600 font-medium"><i class="fas fa-stop-circle mr-1"></i>撤回公告</button>`;
+    list.insertBefore(item, list.firstChild);
+    showToast('公告已成功发布');
+}
+
+// ── ECharts ──
+function initCharts() {
+    const violet = '#7c3aed', violetLight = '#a78bfa';
+
+    // Line chart - user growth
+    const c1 = echarts.init(document.getElementById('chart-user-growth'));
+    c1.setOption({
+        color: [violet],
+        tooltip: { trigger: 'axis', backgroundColor: '#1f1f1f', textStyle: { color: '#fff', fontSize: 12 } },
+        grid: { left: '5%', right: '3%', bottom: '12%', top: '8%' },
+        xAxis: { type: 'category', data: ['5/10','5/11','5/12','5/13','5/14','5/15','5/16'], axisLine: { lineStyle: { color: '#e5e7eb' } }, axisLabel: { color: '#9ca3af', fontSize: 11 } },
+        yAxis: { type: 'value', splitLine: { lineStyle: { color: '#f3f4f6' } }, axisLabel: { color: '#9ca3af', fontSize: 11 } },
+        series: [{ name: '新增用户', type: 'line', smooth: true, data: [12,18,15,23,19,28,31], areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(124,58,237,0.18)' },{ offset: 1, color: 'rgba(124,58,237,0.01)' }] } }, lineStyle: { width: 3 }, symbol: 'circle', symbolSize: 6 }]
+    });
+
+    // Bar chart - course activity
+    const c2 = echarts.init(document.getElementById('chart-course-activity'));
+    c2.setOption({
+        color: ['#3b82f6'],
+        tooltip: { trigger: 'axis', backgroundColor: '#1f1f1f', textStyle: { color: '#fff', fontSize: 12 } },
+        grid: { left: '22%', right: '8%', top: '5%', bottom: '10%' },
+        xAxis: { type: 'value', splitLine: { lineStyle: { color: '#f3f4f6' } }, axisLabel: { color: '#9ca3af', fontSize: 11 } },
+        yAxis: { type: 'category', data: ['计算机网络','英语写作','线性代数','数据结构','操作系统'], axisLabel: { color: '#374151', fontSize: 12 }, axisTick: { show: false }, axisLine: { show: false } },
+        series: [{ name: '问答次数', type: 'bar', data: [38,45,64,87,112], barMaxWidth: 28, itemStyle: { borderRadius: [0,6,6,0], color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#bfdbfe' },{ offset: 1, color: '#3b82f6' }] } }, label: { show: true, position: 'right', color: '#6b7280', fontSize: 11, formatter: '{c}次' } }]
+    });
+
+    // Donut chart - Q&A heat
+    const c3 = echarts.init(document.getElementById('chart-qa-heat'));
+    c3.setOption({
+        color: [violet,'#a78bfa','#c4b5fd','#60a5fa','#34d399'],
+        tooltip: { trigger: 'item', backgroundColor: '#1f1f1f', textStyle: { color: '#fff', fontSize: 12 }, formatter: '{b}: {c}次 ({d}%)' },
+        legend: { bottom: '0%', type: 'scroll', textStyle: { color: '#6b7280', fontSize: 11 } },
+        series: [{ name: '问答类型', type: 'pie', radius: ['42%','68%'], center: ['50%','44%'], data: [{ value: 35, name: '概念理解' },{ value: 28, name: '公式推导' },{ value: 18, name: '例题讲解' },{ value: 12, name: '考试重点' },{ value: 7, name: '作业答疑' }], itemStyle: { borderRadius: 6, borderWidth: 2, borderColor: '#fff' }, label: { show: false } }]
+    });
+
+    // Horizontal bar - check-in rate
+    const c4 = echarts.init(document.getElementById('chart-checkin'));
+    c4.setOption({
+        color: ['#10b981'],
+        tooltip: { trigger: 'axis', backgroundColor: '#1f1f1f', textStyle: { color: '#fff', fontSize: 12 }, formatter: (p) => `${p[0].name}<br/>签到率: ${p[0].value}%` },
+        grid: { left: '22%', right: '12%', top: '5%', bottom: '10%' },
+        xAxis: { type: 'value', max: 100, axisLabel: { color: '#9ca3af', fontSize: 11, formatter: '{value}%' }, splitLine: { lineStyle: { color: '#f3f4f6' } } },
+        yAxis: { type: 'category', data: ['英语写作','线性代数','计算机网络','数据结构','操作系统'], axisLabel: { color: '#374151', fontSize: 12 }, axisTick: { show: false }, axisLine: { show: false } },
+        series: [{ type: 'bar', data: [82,85,78,92,96], barMaxWidth: 28, itemStyle: { borderRadius: [0,6,6,0], color: { type: 'linear', x: 0, y: 0, x2: 1, y2: 0, colorStops: [{ offset: 0, color: '#a7f3d0' },{ offset: 1, color: '#10b981' }] } }, label: { show: true, position: 'right', color: '#6b7280', fontSize: 11, formatter: '{c}%' } }]
+    });
+
+    window.addEventListener('resize', () => { c1.resize(); c2.resize(); c3.resize(); c4.resize(); });
+}
+</script>
+</body>
+</html>

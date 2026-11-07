@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CourseQA · 教师端</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { font-family: "Microsoft YaHei", system-ui, sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .avatar-ring { box-shadow: 0 0 0 3px #fff, 0 0 0 5px #3b82f6; }
+        /* ── 主题色覆盖（blue → 主题） ── */
+        body[data-theme="orange"] .bg-blue-600,body[data-theme="orange"] .bg-blue-700{background-color:#ea580c!important}
+        body[data-theme="orange"] .hover\:bg-blue-700:hover{background-color:#c2410c!important}
+        body[data-theme="orange"] .bg-blue-50{background-color:#fff7ed!important}
+        body[data-theme="orange"] .bg-blue-100{background-color:#ffedd5!important}
+        body[data-theme="orange"] .text-blue-600,body[data-theme="orange"] .text-blue-700{color:#ea580c!important}
+        body[data-theme="orange"] .text-blue-400{color:#fb923c!important}
+        body[data-theme="orange"] .text-blue-500{color:#f97316!important}
+        body[data-theme="orange"] .border-blue-200,body[data-theme="orange"] .border-blue-100{border-color:#fed7aa!important}
+        body[data-theme="orange"] .border-blue-500{border-color:#f97316!important}
+        body[data-theme="orange"] .focus\:border-blue-500:focus{border-color:#f97316!important}
+        body[data-theme="orange"] .hover\:text-blue-600:hover{color:#ea580c!important}
+        body[data-theme="orange"] #lnav-avatar{background-color:#7c2d12!important}
+
+        body[data-theme="rose"] .bg-blue-600,body[data-theme="rose"] .bg-blue-700{background-color:#e11d48!important}
+        body[data-theme="rose"] .hover\:bg-blue-700:hover{background-color:#be123c!important}
+        body[data-theme="rose"] .bg-blue-50{background-color:#fff1f2!important}
+        body[data-theme="rose"] .bg-blue-100{background-color:#ffe4e6!important}
+        body[data-theme="rose"] .text-blue-600,body[data-theme="rose"] .text-blue-700{color:#e11d48!important}
+        body[data-theme="rose"] .text-blue-400{color:#fb7185!important}
+        body[data-theme="rose"] .text-blue-500{color:#f43f5e!important}
+        body[data-theme="rose"] .border-blue-200,body[data-theme="rose"] .border-blue-100{border-color:#fecdd3!important}
+        body[data-theme="rose"] .border-blue-500{border-color:#f43f5e!important}
+        body[data-theme="rose"] .focus\:border-blue-500:focus{border-color:#f43f5e!important}
+        body[data-theme="rose"] .hover\:text-blue-600:hover{color:#e11d48!important}
+        body[data-theme="rose"] #lnav-avatar{background-color:#9f1239!important}
+
+        body[data-theme="teal"] .bg-blue-600,body[data-theme="teal"] .bg-blue-700{background-color:#0d9488!important}
+        body[data-theme="teal"] .hover\:bg-blue-700:hover{background-color:#0f766e!important}
+        body[data-theme="teal"] .bg-blue-50{background-color:#f0fdfa!important}
+        body[data-theme="teal"] .bg-blue-100{background-color:#ccfbf1!important}
+        body[data-theme="teal"] .text-blue-600,body[data-theme="teal"] .text-blue-700{color:#0d9488!important}
+        body[data-theme="teal"] .text-blue-400{color:#2dd4bf!important}
+        body[data-theme="teal"] .text-blue-500{color:#14b8a6!important}
+        body[data-theme="teal"] .border-blue-200,body[data-theme="teal"] .border-blue-100{border-color:#99f6e4!important}
+        body[data-theme="teal"] .border-blue-500{border-color:#14b8a6!important}
+        body[data-theme="teal"] .focus\:border-blue-500:focus{border-color:#14b8a6!important}
+        body[data-theme="teal"] .hover\:text-blue-600:hover{color:#0d9488!important}
+        body[data-theme="teal"] #lnav-avatar{background-color:#134e4a!important}
+
+        body[data-theme="purple"] .bg-blue-600,body[data-theme="purple"] .bg-blue-700{background-color:#7c3aed!important}
+        body[data-theme="purple"] .hover\:bg-blue-700:hover{background-color:#6d28d9!important}
+        body[data-theme="purple"] .bg-blue-50{background-color:#f5f3ff!important}
+        body[data-theme="purple"] .bg-blue-100{background-color:#ede9fe!important}
+        body[data-theme="purple"] .text-blue-600,body[data-theme="purple"] .text-blue-700{color:#7c3aed!important}
+        body[data-theme="purple"] .text-blue-400{color:#a78bfa!important}
+        body[data-theme="purple"] .text-blue-500{color:#8b5cf6!important}
+        body[data-theme="purple"] .border-blue-200,body[data-theme="purple"] .border-blue-100{border-color:#ddd6fe!important}
+        body[data-theme="purple"] .border-blue-500{border-color:#8b5cf6!important}
+        body[data-theme="purple"] .focus\:border-blue-500:focus{border-color:#8b5cf6!important}
+        body[data-theme="purple"] .hover\:text-blue-600:hover{color:#7c3aed!important}
+        body[data-theme="purple"] #lnav-avatar{background-color:#4c1d95!important}
+        /* ── 侧边栏激活态随主题变色 ── */
+        #left-nav .bg-white\/20{background-color:rgba(37,99,235,0.38)!important}
+        body[data-theme="orange"] #left-nav .bg-white\/20{background-color:rgba(234,88,12,0.5)!important}
+        body[data-theme="rose"] #left-nav .bg-white\/20{background-color:rgba(225,29,72,0.5)!important}
+        body[data-theme="teal"] #left-nav .bg-white\/20{background-color:rgba(13,148,136,0.5)!important}
+        body[data-theme="purple"] #left-nav .bg-white\/20{background-color:rgba(124,58,237,0.5)!important}
+        /* ── 新主题：天蓝 sky ── */
+        body[data-theme="sky"] .bg-blue-600,body[data-theme="sky"] .bg-blue-700{background-color:#0284c7!important}
+        body[data-theme="sky"] .hover\:bg-blue-700:hover{background-color:#0369a1!important}
+        body[data-theme="sky"] .bg-blue-50{background-color:#f0f9ff!important}
+        body[data-theme="sky"] .bg-blue-100{background-color:#e0f2fe!important}
+        body[data-theme="sky"] .text-blue-600,body[data-theme="sky"] .text-blue-700{color:#0284c7!important}
+        body[data-theme="sky"] .text-blue-400{color:#38bdf8!important}
+        body[data-theme="sky"] .text-blue-500{color:#0ea5e9!important}
+        body[data-theme="sky"] .border-blue-200,body[data-theme="sky"] .border-blue-100{border-color:#bae6fd!important}
+        body[data-theme="sky"] .border-blue-500{border-color:#0ea5e9!important}
+        body[data-theme="sky"] .focus\:border-blue-500:focus{border-color:#0ea5e9!important}
+        body[data-theme="sky"] .hover\:text-blue-600:hover{color:#0284c7!important}
+        body[data-theme="sky"] #lnav-avatar{background-color:#0c4a6e!important}
+        body[data-theme="sky"] #left-nav .bg-white\/20{background-color:rgba(2,132,199,0.5)!important}
+        /* ── 新主题：金黄 amber ── */
+        body[data-theme="amber"] .bg-blue-600,body[data-theme="amber"] .bg-blue-700{background-color:#d97706!important}
+        body[data-theme="amber"] .hover\:bg-blue-700:hover{background-color:#b45309!important}
+        body[data-theme="amber"] .bg-blue-50{background-color:#fffbeb!important}
+        body[data-theme="amber"] .bg-blue-100{background-color:#fef3c7!important}
+        body[data-theme="amber"] .text-blue-600,body[data-theme="amber"] .text-blue-700{color:#d97706!important}
+        body[data-theme="amber"] .text-blue-400{color:#fbbf24!important}
+        body[data-theme="amber"] .text-blue-500{color:#f59e0b!important}
+        body[data-theme="amber"] .border-blue-200,body[data-theme="amber"] .border-blue-100{border-color:#fde68a!important}
+        body[data-theme="amber"] .border-blue-500{border-color:#f59e0b!important}
+        body[data-theme="amber"] .focus\:border-blue-500:focus{border-color:#f59e0b!important}
+        body[data-theme="amber"] .hover\:text-blue-600:hover{color:#d97706!important}
+        body[data-theme="amber"] #lnav-avatar{background-color:#78350f!important}
+        body[data-theme="amber"] #left-nav .bg-white\/20{background-color:rgba(217,119,6,0.5)!important}
+        /* ── 新主题：靛蓝 indigo ── */
+        body[data-theme="indigo"] .bg-blue-600,body[data-theme="indigo"] .bg-blue-700{background-color:#4f46e5!important}
+        body[data-theme="indigo"] .hover\:bg-blue-700:hover{background-color:#4338ca!important}
+        body[data-theme="indigo"] .bg-blue-50{background-color:#eef2ff!important}
+        body[data-theme="indigo"] .bg-blue-100{background-color:#e0e7ff!important}
+        body[data-theme="indigo"] .text-blue-600,body[data-theme="indigo"] .text-blue-700{color:#4f46e5!important}
+        body[data-theme="indigo"] .text-blue-400{color:#818cf8!important}
+        body[data-theme="indigo"] .text-blue-500{color:#6366f1!important}
+        body[data-theme="indigo"] .border-blue-200,body[data-theme="indigo"] .border-blue-100{border-color:#c7d2fe!important}
+        body[data-theme="indigo"] .border-blue-500{border-color:#6366f1!important}
+        body[data-theme="indigo"] .focus\:border-blue-500:focus{border-color:#6366f1!important}
+        body[data-theme="indigo"] .hover\:text-blue-600:hover{color:#4f46e5!important}
+        body[data-theme="indigo"] #lnav-avatar{background-color:#312e81!important}
+        body[data-theme="indigo"] #left-nav .bg-white\/20{background-color:rgba(79,70,229,0.5)!important}
+        /* ── 新主题：粉红 pink ── */
+        body[data-theme="pink"] .bg-blue-600,body[data-theme="pink"] .bg-blue-700{background-color:#db2777!important}
+        body[data-theme="pink"] .hover\:bg-blue-700:hover{background-color:#be185d!important}
+        body[data-theme="pink"] .bg-blue-50{background-color:#fdf2f8!important}
+        body[data-theme="pink"] .bg-blue-100{background-color:#fce7f3!important}
+        body[data-theme="pink"] .text-blue-600,body[data-theme="pink"] .text-blue-700{color:#db2777!important}
+        body[data-theme="pink"] .text-blue-400{color:#f472b6!important}
+        body[data-theme="pink"] .text-blue-500{color:#ec4899!important}
+        body[data-theme="pink"] .border-blue-200,body[data-theme="pink"] .border-blue-100{border-color:#fbcfe8!important}
+        body[data-theme="pink"] .border-blue-500{border-color:#ec4899!important}
+        body[data-theme="pink"] .focus\:border-blue-500:focus{border-color:#ec4899!important}
+        body[data-theme="pink"] .hover\:text-blue-600:hover{color:#db2777!important}
+        body[data-theme="pink"] #lnav-avatar{background-color:#831843!important}
+        body[data-theme="pink"] #left-nav .bg-white\/20{background-color:rgba(219,39,119,0.5)!important}
+        /* ── 新主题：青柠 lime ── */
+        body[data-theme="lime"] .bg-blue-600,body[data-theme="lime"] .bg-blue-700{background-color:#65a30d!important}
+        body[data-theme="lime"] .hover\:bg-blue-700:hover{background-color:#4d7c0f!important}
+        body[data-theme="lime"] .bg-blue-50{background-color:#f7fee7!important}
+        body[data-theme="lime"] .bg-blue-100{background-color:#ecfccb!important}
+        body[data-theme="lime"] .text-blue-600,body[data-theme="lime"] .text-blue-700{color:#65a30d!important}
+        body[data-theme="lime"] .text-blue-400{color:#a3e635!important}
+        body[data-theme="lime"] .text-blue-500{color:#84cc16!important}
+        body[data-theme="lime"] .border-blue-200,body[data-theme="lime"] .border-blue-100{border-color:#d9f99d!important}
+        body[data-theme="lime"] .border-blue-500{border-color:#84cc16!important}
+        body[data-theme="lime"] .focus\:border-blue-500:focus{border-color:#84cc16!important}
+        body[data-theme="lime"] .hover\:text-blue-600:hover{color:#65a30d!important}
+        body[data-theme="lime"] #lnav-avatar{background-color:#365314!important}
+        body[data-theme="lime"] #left-nav .bg-white\/20{background-color:rgba(101,163,13,0.5)!important}
+        /* ── 夜间模式 ── */
+        body[data-dark="1"]{background-color:#0f172a;color-scheme:dark}
+        body[data-dark="1"] .bg-white{background-color:#1e293b!important}
+        body[data-dark="1"] .bg-gray-50{background-color:#0f172a!important}
+        body[data-dark="1"] .bg-gray-100{background-color:#1e293b!important}
+        body[data-dark="1"] .bg-gray-200{background-color:#334155!important}
+        body[data-dark="1"] .bg-blue-50{background-color:#0c1a2e!important}
+        body[data-dark="1"] .bg-blue-100{background-color:#1e3a5f!important}
+        body[data-dark="1"] .bg-amber-50{background-color:#1c1007!important}
+        body[data-dark="1"] .border-gray-100{border-color:#334155!important}
+        body[data-dark="1"] .border-gray-200{border-color:#334155!important}
+        body[data-dark="1"] .border-gray-300{border-color:#475569!important}
+        body[data-dark="1"] .border-blue-100{border-color:#1e3a5f!important}
+        body[data-dark="1"] .border-blue-200{border-color:#1e3a5f!important}
+        body[data-dark="1"] .border-amber-200{border-color:#451a03!important}
+        body[data-dark="1"] .text-gray-800{color:#e2e8f0!important}
+        body[data-dark="1"] .text-gray-700{color:#cbd5e1!important}
+        body[data-dark="1"] .text-gray-600{color:#94a3b8!important}
+        body[data-dark="1"] .text-gray-500{color:#64748b!important}
+        body[data-dark="1"] .text-gray-400{color:#94a3b8!important}
+        body[data-dark="1"] .shadow-sm{box-shadow:0 1px 3px 0 rgba(0,0,0,0.5)!important}
+        body[data-dark="1"] .divide-gray-100>*+*{border-color:#334155!important}
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- ══════════════════════ 左侧导航栏 ══════════════════════ -->
+    <div id="left-nav" class="fixed left-0 top-0 h-full bg-gray-900 flex flex-col overflow-hidden" style="width:200px;transition:width 0.25s;z-index:35">
+        <div class="flex flex-col items-center py-5 px-3 border-b border-white/10 shrink-0">
+            <div id="lnav-avatar" class="w-12 h-12 rounded-full overflow-hidden bg-blue-800 flex items-center justify-center mb-2 shrink-0">
+                <i class="fas fa-chalkboard-teacher text-white text-lg"></i>
+            </div>
+            <span id="lnav-username" class="lnav-label text-white/80 text-sm font-medium truncate w-full text-center leading-tight mt-1"></span>
+        </div>
+        <nav class="flex-1 py-2">
+            <button id="lnav-courses-btn" onclick="navigateTo('courses')"
+                class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white bg-white/20 hover:bg-white/25 transition-colors">
+                <i class="fas fa-chalkboard text-base shrink-0"></i>
+                <span class="lnav-label text-sm whitespace-nowrap">我的课程</span>
+            </button>
+            <button id="lnav-msgs-btn" onclick="navigateTo('msgs')"
+                class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors relative">
+                <i class="fas fa-envelope text-base shrink-0"></i>
+                <span class="lnav-label text-sm whitespace-nowrap">互动消息</span>
+                <span id="msg-badge" class="hidden absolute top-2.5 left-7 min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center px-1"></span>
+            </button>
+            <button id="lnav-notes-btn" onclick="navigateTo('notes')"
+                class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors">
+                <i class="fas fa-book-open text-base shrink-0"></i>
+                <span class="lnav-label text-sm whitespace-nowrap">学生笔记</span>
+            </button>
+            <button id="lnav-settings-btn" onclick="navigateTo('settings')"
+                class="lnav-item w-full flex items-center gap-3 px-4 py-3.5 text-white/70 hover:bg-white/10 hover:text-white transition-colors">
+                <i class="fas fa-cog text-base shrink-0"></i>
+                <span class="lnav-label text-sm whitespace-nowrap">设置</span>
+            </button>
+        </nav>
+        <button onclick="toggleNavCollapse()"
+            class="shrink-0 w-full flex items-center px-4 py-3 text-white/40 hover:text-white/70 border-t border-white/10 transition-colors">
+            <span id="nav-collapse-label" class="lnav-label text-xs mr-auto">收起</span>
+            <i id="nav-collapse-icon" class="fas fa-angle-double-left text-xs" style="transition:transform 0.25s"></i>
+        </button>
+    </div>
+
+    <!-- ══════════════════════ 主内容区 ══════════════════════ -->
+    <div id="main-wrap" style="margin-left:200px;transition:margin-left 0.25s">
+
+    <!-- 顶栏 -->
+    <div class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+        <div class="flex items-center gap-3">
+            <span class="text-blue-600 font-bold text-xl">CourseQA</span>
+            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">教师端</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <!-- 头像 + 昵称（点击打开个人设置） -->
+            <button onclick="openProfileModal()" id="nav-profile-btn"
+                class="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer group">
+                <div id="nav-avatar" class="w-9 h-9 rounded-full overflow-hidden border-2 border-blue-200 flex items-center justify-center bg-blue-50 shrink-0">
+                    <i class="fas fa-chalkboard-teacher text-blue-400 text-sm"></i>
+                </div>
+                <span id="username-display" class="text-gray-700 text-sm font-medium group-hover:text-blue-600 transition-colors"></span>
+                <i class="fas fa-pen text-gray-300 text-xs group-hover:text-blue-400 transition-colors"></i>
+            </button>
+            <button onclick="logout()" class="text-sm text-gray-400 hover:text-red-500 flex items-center gap-1 ml-1">
+                <i class="fas fa-sign-out-alt"></i> 退出
+            </button>
+        </div>
+    </div>
+
+    <div id="page-courses" class="flex items-start">
+        <!-- 左侧：Tab + 内容 -->
+        <div class="flex-1 min-w-0 p-6">
+        <!-- Tab 导航 -->
+        <div class="flex gap-1 bg-white rounded-2xl p-1 shadow-sm mb-6 border border-gray-100">
+            <button onclick="switchTab('courses')" id="tab-courses"
+                class="tab-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all bg-blue-600 text-white">
+                <i class="fas fa-book mr-1"></i> 我的课程
+            </button>
+            <button onclick="switchTab('upload')" id="tab-upload"
+                class="tab-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all text-gray-600 hover:bg-gray-50">
+                <i class="fas fa-file-upload mr-1"></i> 教材管理
+            </button>
+            <button onclick="switchTab('history')" id="tab-history"
+                class="tab-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all text-gray-600 hover:bg-gray-50">
+                <i class="fas fa-history mr-1"></i> 提问记录
+            </button>
+        </div>
+
+        <!-- ── 我的课程 ── -->
+        <div id="content-courses" class="tab-content active">
+            <!-- 新建课程 -->
+            <div class="bg-white rounded-3xl shadow-sm p-6 mb-5 border border-gray-100">
+                <h2 class="font-semibold text-lg mb-4">新建课程</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">课程名称</label>
+                        <input id="course-name" type="text" placeholder="例如：高等数学"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">课程码（学生用此码加入）</label>
+                        <input id="course-key" type="text" placeholder="例如：math101"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+                    </div>
+                </div>
+                <p id="course-msg" class="text-sm mt-2 min-h-[20px]"></p>
+                <button onclick="createCourse()"
+                    class="mt-1 px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium">
+                    <i class="fas fa-plus mr-1"></i> 创建课程
+                </button>
+            </div>
+
+            <!-- 课程列表 -->
+            <div class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100">
+                <h2 class="font-semibold text-lg mb-4">已创建课程</h2>
+                <div id="courses-list"><p class="text-gray-400 text-sm">加载中...</p></div>
+            </div>
+        </div>
+
+        <!-- ── 教材管理 ── -->
+        <div id="content-upload" class="tab-content">
+            <div class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100 mb-5">
+                <h2 class="font-semibold text-lg mb-4">上传课程 PDF 教材</h2>
+                <div class="mb-4">
+                    <label class="block text-sm text-gray-600 mb-1">选择课程</label>
+                    <select id="upload-course-select" onchange="loadDocuments(this.value)"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500 bg-white">
+                        <option value="">-- 请先选择课程 --</option>
+                    </select>
+                </div>
+                <div class="border-2 border-dashed border-gray-300 rounded-3xl p-8 text-center hover:border-blue-300 transition-colors">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+                    <p class="font-medium mb-2">选择 PDF 文件上传</p>
+                    <input id="file-input" type="file" accept=".pdf" class="hidden">
+                    <button onclick="document.getElementById('file-input').click()"
+                        class="px-6 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700">
+                        <i class="fas fa-folder-open mr-1"></i> 选择文件
+                    </button>
+                    <p id="upload-status" class="mt-3 text-sm min-h-[24px]"></p>
+                    <div id="upload-progress" class="hidden mt-2 w-full bg-gray-100 rounded-full h-2">
+                        <div id="upload-progress-bar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width:0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 已上传文档列表 -->
+            <div class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100">
+                <h2 class="font-semibold text-lg mb-4">已上传文档</h2>
+                <div id="doc-list"><p class="text-gray-400 text-sm">请先选择课程</p></div>
+            </div>
+        </div>
+
+        <!-- ── 提问记录 ── -->
+        <div id="content-history" class="tab-content">
+            <div class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100">
+                <div class="flex items-center gap-4 mb-4">
+                    <h2 class="font-semibold text-lg">学生提问记录</h2>
+                    <select id="history-course-select" onchange="loadHistory()"
+                        class="px-4 py-2 border border-gray-300 rounded-xl focus:outline-none focus:border-blue-500 bg-white text-sm">
+                        <option value="">-- 选择课程 --</option>
+                    </select>
+                </div>
+                <div id="history-list"><p class="text-gray-400 text-sm">请先选择课程</p></div>
+            </div>
+        </div>
+        </div><!-- /左侧Tab+内容 -->
+
+        <!-- 右侧：日历 -->
+        <div id="cal-sidebar" class="w-64 shrink-0 border-l border-gray-100 bg-white overflow-y-auto" style="position:sticky;top:65px;max-height:calc(100vh - 65px)">
+            <!-- 月份导航（固定在顶部） -->
+            <div class="cal-sticky-header sticky top-0 z-10 bg-white border-b border-gray-100 px-3 py-2">
+                <div class="flex items-center justify-between">
+                    <button onclick="prevCalMonth()" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500">
+                        <i class="fas fa-chevron-left text-xs"></i>
+                    </button>
+                    <span id="cal-month-label" class="text-sm font-semibold text-gray-700"></span>
+                    <button onclick="nextCalMonth()" class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-500">
+                        <i class="fas fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+                <p class="text-center text-[10px] text-gray-400 mt-1">双击具体日期以设置日程</p>
+            </div>
+            <!-- 日期列表（JS renderCalendar() 填充） -->
+            <div id="cal-grid" class="px-2 py-1"></div>
+        </div><!-- /右侧日历 -->
+    </div>
+
+    <!-- ══════════════════════ 消息页 ══════════════════════ -->
+    <div id="page-msgs" class="hidden flex flex-col" style="height:calc(100vh - 65px)">
+        <div class="shrink-0 bg-white border-b border-gray-200 flex items-center px-6 h-12">
+            <button id="msgs-tab-private" onclick="switchMsgsTab('private')"
+                class="flex items-center gap-1.5 px-4 h-12 text-sm font-medium border-b-2 border-blue-500 text-blue-600 transition-colors">
+                <i class="fas fa-comment-dots"></i> 私聊消息
+                <span id="msgs-private-badge" class="hidden min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center px-1 ml-0.5"></span>
+            </button>
+            <button id="msgs-tab-group" onclick="switchMsgsTab('group')"
+                class="flex items-center gap-1.5 px-4 h-12 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-gray-700 transition-colors">
+                <i class="fas fa-users"></i> 群组消息
+                <span id="msgs-group-badge" class="hidden min-w-[16px] h-4 bg-red-500 text-white text-[9px] font-bold rounded-full inline-flex items-center justify-center px-1 ml-0.5"></span>
+            </button>
+        </div>
+        <div id="msgs-panel-private" class="flex-1 flex min-h-0 bg-gray-50">
+            <div class="w-72 border-r border-gray-200 bg-white flex flex-col shrink-0">
+                <div class="px-4 py-2 text-xs text-gray-400 font-medium border-b border-gray-100 bg-white shrink-0">学生对话</div>
+                <div id="conversations-list" class="flex-1 overflow-y-auto"></div>
+            </div>
+            <div class="flex-1 flex flex-col min-h-0 bg-white">
+                <div id="conv-placeholder" class="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3">
+                    <i class="fas fa-comments text-5xl text-gray-200"></i>
+                    <p class="text-sm">选择一个对话，开始聊天</p>
+                </div>
+                <div id="conv-detail-view" class="hidden flex-1 flex flex-col min-h-0">
+                    <div class="px-6 py-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
+                        <button onclick="backToConversations()" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100">
+                            <i class="fas fa-arrow-left text-sm"></i>
+                        </button>
+                        <span id="conv-partner-name" class="font-medium text-gray-800"></span>
+                        <div class="ml-auto relative">
+                            <button onclick="toggleConvMenu()" id="conv-menu-btn" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400">
+                                <i class="fas fa-ellipsis-v text-sm"></i>
+                            </button>
+                            <div id="conv-menu-dropdown" class="hidden absolute right-0 top-9 bg-white rounded-xl shadow-lg border border-gray-100 w-40 z-20 py-1">
+                                <button onclick="openPartnerProfile()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">对方个人信息</button>
+                                <button onclick="openHistoryPicker()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">历史聊天</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="conv-pin-banner" class="hidden shrink-0 px-4 py-2 bg-amber-50 border-b border-amber-100 flex items-center gap-2 text-sm">
+                        <i class="fas fa-thumbtack text-amber-500 text-xs"></i>
+                        <span id="conv-pin-text" class="flex-1 truncate text-gray-700 text-xs"></span>
+                        <button onclick="unpinMessage()" class="text-gray-400 hover:text-gray-600 text-xs shrink-0">取消置顶</button>
+                    </div>
+                    <div id="conv-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"></div>
+                    <div class="px-4 py-3 border-t border-gray-100 shrink-0 bg-white">
+                        <div class="flex gap-2 items-end">
+                            <textarea id="msg-input" rows="1" placeholder="输入消息，按 Enter 发送，Shift+Enter 换行..."
+                                class="flex-1 px-4 py-2.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-blue-400 bg-gray-50 resize-none overflow-hidden"
+                                style="max-height:120px"></textarea>
+                            <button onclick="sendMessage()"
+                                class="px-5 py-2.5 bg-blue-600 text-white rounded-2xl text-sm hover:bg-blue-700 font-medium shrink-0">发送</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="msgs-panel-group" class="hidden flex-1 flex min-h-0 bg-gray-50">
+            <div class="w-72 border-r border-gray-200 bg-white flex flex-col shrink-0">
+                <div class="px-4 py-2 text-xs text-gray-400 font-medium border-b border-gray-100 shrink-0">我的群组</div>
+                <div id="groups-list" class="flex-1 overflow-y-auto"></div>
+            </div>
+            <div class="flex-1 flex flex-col min-h-0 bg-white">
+                <div id="group-placeholder" class="flex-1 flex flex-col items-center justify-center text-gray-400 gap-3">
+                    <i class="fas fa-users text-5xl text-gray-200"></i>
+                    <p class="text-sm">选择群组，开始聊天</p>
+                </div>
+                <div id="group-detail-view" class="hidden flex-1 flex flex-col min-h-0">
+                    <div class="px-6 py-3 border-b border-gray-100 flex items-center gap-3 shrink-0">
+                        <button onclick="backToGroups()" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100">
+                            <i class="fas fa-arrow-left text-sm"></i>
+                        </button>
+                        <span id="group-name" class="font-medium text-gray-800"></span>
+                        <div class="ml-auto relative">
+                            <button onclick="toggleGroupMenu()" id="group-menu-btn" class="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400">
+                                <i class="fas fa-ellipsis-v text-sm"></i>
+                            </button>
+                            <div id="group-menu-dropdown" class="hidden absolute right-0 top-9 bg-white rounded-xl shadow-lg border border-gray-100 w-44 z-20 py-1">
+                                <button onclick="openGroupMembersList()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">群成员列表</button>
+                                <button onclick="openGroupHistoryPicker()" class="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">历史聊天</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="group-pin-banners" class="shrink-0"></div>
+                    <div id="group-messages" class="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50"></div>
+                    <div class="px-4 py-3 border-t border-gray-100 shrink-0 bg-white">
+                        <div class="flex gap-2 items-end">
+                            <textarea id="group-msg-input" rows="1" placeholder="输入消息，按 Enter 发送，Shift+Enter 换行..."
+                                class="flex-1 px-4 py-2.5 border border-gray-200 rounded-2xl text-sm focus:outline-none focus:border-blue-400 bg-gray-50 resize-none overflow-hidden"
+                                style="max-height:120px"></textarea>
+                            <button onclick="sendGroupMessage()"
+                                class="px-5 py-2.5 bg-blue-600 text-white rounded-2xl text-sm hover:bg-blue-700 font-medium shrink-0">发送</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ 笔记页 ══════════════════════ -->
+    <div id="page-notes" class="hidden overflow-y-auto bg-gray-50" style="height:calc(100vh - 65px)">
+        <div class="max-w-5xl mx-auto p-6">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">学生公开笔记</h2>
+                    <p id="notes-count-text" class="text-sm text-gray-400 mt-1">加载中...</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="relative" id="notes-filter-wrap">
+                        <button onclick="toggleNotesFilter()" class="px-4 py-2 text-sm text-gray-600 border border-gray-200 rounded-xl hover:bg-gray-50 flex items-center gap-2 min-w-[90px]">
+                            <i class="fas fa-layer-group text-xs"></i>
+                            <span id="notes-filter-label">全部</span>
+                            <i class="fas fa-chevron-down text-xs ml-1"></i>
+                        </button>
+                        <div id="notes-filter-dropdown" class="hidden absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg z-20 min-w-[168px] py-1 max-h-[300px] overflow-y-auto">
+                            <div id="notes-filter-list"></div>
+                        </div>
+                    </div>
+                    <button onclick="loadPublicNotes()" class="px-4 py-2 text-sm text-blue-500 border border-blue-200 rounded-xl hover:bg-blue-50 flex items-center gap-2">
+                        <i class="fas fa-sync text-xs"></i> 刷新
+                    </button>
+                </div>
+            </div>
+            <div id="public-notes-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+    </div>
+
+    <!-- ══════════════════════ 设置页 ══════════════════════ -->
+    <div id="page-settings" class="hidden overflow-y-auto bg-gray-50" style="height:calc(100vh - 65px)">
+        <div class="max-w-2xl mx-auto p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-6">设置</h2>
+            <!-- 子标签栏 -->
+            <div class="flex gap-1 bg-white rounded-2xl p-1 shadow-sm mb-6 border border-gray-100">
+                <button onclick="switchSettingsTab('basic')" id="settings-tab-basic"
+                    class="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all bg-blue-600 text-white">
+                    <i class="fas fa-user mr-1"></i> 基本资料
+                </button>
+                <button onclick="switchSettingsTab('account')" id="settings-tab-account"
+                    class="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-600 hover:bg-gray-50">
+                    <i class="fas fa-shield-alt mr-1"></i> 账号管理
+                </button>
+                <button onclick="switchSettingsTab('theme')" id="settings-tab-theme"
+                    class="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all text-gray-600 hover:bg-gray-50">
+                    <i class="fas fa-palette mr-1"></i> 个性化
+                </button>
+            </div>
+            <!-- 基本资料 -->
+            <div id="settings-content-basic" class="bg-white rounded-3xl shadow-sm p-6 border border-gray-100 space-y-5">
+                <div class="flex items-center gap-3 pb-4 border-b border-gray-100">
+                    <div class="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center shrink-0">
+                        <i class="fas fa-id-badge"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-gray-400">账号 ID</p>
+                        <p id="settings-user-id" class="font-mono text-sm font-medium text-gray-800">-</p>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-2">性别</label>
+                    <select id="settings-gender"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500 text-sm bg-white">
+                        <option value="">保密</option>
+                        <option value="男">男</option>
+                        <option value="女">女</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-2">手机号 <span class="text-gray-400 font-normal">（选填）</span></label>
+                    <input id="settings-phone" type="tel" placeholder="请输入手机号"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500 text-sm">
+                </div>
+                <p id="settings-basic-msg" class="text-sm min-h-[20px]"></p>
+                <button onclick="saveBasicInfo()"
+                    class="px-6 py-2.5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium text-sm">
+                    <i class="fas fa-save mr-1"></i> 保存
+                </button>
+            </div>
+            <!-- 账号管理 -->
+            <div id="settings-content-account" class="hidden bg-white rounded-3xl shadow-sm p-6 border border-gray-100 space-y-5">
+                <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <i class="fas fa-key text-blue-500"></i> 修改密码
+                </h3>
+                <div class="space-y-3">
+                    <input id="pwd-current" type="password" placeholder="当前密码"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-2xl text-sm focus:outline-none focus:border-blue-500">
+                    <input id="pwd-new" type="password" placeholder="新密码（至少4位）"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-2xl text-sm focus:outline-none focus:border-blue-500">
+                    <input id="pwd-confirm" type="password" placeholder="确认新密码"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-2xl text-sm focus:outline-none focus:border-blue-500">
+                    <p id="pwd-msg" class="text-sm min-h-[18px]"></p>
+                    <button onclick="changePassword()"
+                        class="px-6 py-2.5 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 text-sm font-medium">
+                        <i class="fas fa-key mr-1"></i> 更新密码
+                    </button>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-red-400"></i> 危险区域
+                    </h3>
+                    <button onclick="confirmDeleteAccount()"
+                        class="px-6 py-2.5 text-red-500 border border-red-200 rounded-2xl hover:bg-red-50 text-sm font-medium">
+                        <i class="fas fa-user-times mr-1"></i> 注销账号
+                    </button>
+                    <p class="text-xs text-gray-400 mt-2">注销后所有数据将被永久删除，无法恢复</p>
+                </div>
+            </div>
+            <!-- 个性化 -->
+            <div id="settings-content-theme" class="hidden bg-white rounded-3xl shadow-sm p-6 border border-gray-100">
+                <h3 class="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                    <i class="fas fa-paint-brush text-blue-500"></i> 主题色
+                </h3>
+                <div class="grid grid-cols-5 gap-3" id="theme-swatches"></div>
+                <div class="flex items-center justify-between mt-5 pt-5 border-t border-gray-100">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-moon text-gray-500 text-sm"></i>
+                        <span class="text-sm font-medium text-gray-700">夜间模式</span>
+                    </div>
+                    <button id="dark-toggle-btn" onclick="toggleDarkMode()"
+                        class="relative w-11 h-6 rounded-full transition-colors duration-200 bg-gray-200 focus:outline-none shrink-0">
+                        <span data-thumb class="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 inline-block"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    </div><!-- /main-wrap -->
+
+    <!-- ══ PDF 预览弹窗 ══ -->
+    <div id="modal-pdf" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" style="backdrop-filter:blur(2px)">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+                <h3 id="pdf-modal-title" class="font-semibold"></h3>
+                <button onclick="closePdf()" class="text-gray-400 hover:text-gray-600 text-xl w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-3 min-h-0">
+                <iframe id="pdf-embed" src="" class="w-full h-full rounded-2xl" style="border:none"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ 课程重命名弹窗 ══ -->
+    <div id="modal-rename" class="hidden fixed inset-0 z-40 bg-black/30 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+            <h3 class="font-semibold text-lg mb-4">修改课程名</h3>
+            <input id="rename-input" type="text" placeholder="新课程名"
+                class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500 mb-4">
+            <div class="flex gap-3">
+                <button onclick="confirmRename()"
+                    class="flex-1 py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium">确认</button>
+                <button onclick="closeRename()"
+                    class="flex-1 py-3 bg-gray-100 text-gray-600 rounded-2xl hover:bg-gray-200">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ 对方个人信息弹窗 ══ -->
+    <div id="modal-partner-profile" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-6 w-80 shadow-xl">
+            <h3 class="font-semibold mb-4 text-gray-800">个人信息</h3>
+            <div id="partner-profile-content" class="space-y-3 text-sm"></div>
+            <button onclick="closePartnerProfile()" class="mt-5 w-full py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm">关闭</button>
+        </div>
+    </div>
+
+    <!-- ══ 历史聊天日历弹窗 ══ -->
+    <div id="modal-history-picker" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-6 w-96 shadow-xl max-h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between mb-4 shrink-0">
+                <h3 class="font-semibold text-gray-800">历史聊天</h3>
+                <button onclick="closeHistoryPicker()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex items-center justify-between mb-3 shrink-0">
+                <button onclick="prevHistoryMonth()" class="px-2 py-1 rounded hover:bg-gray-100 text-gray-500"><i class="fas fa-chevron-left text-xs"></i></button>
+                <span id="history-month-label" class="text-sm font-medium text-gray-700"></span>
+                <button onclick="nextHistoryMonth()" class="px-2 py-1 rounded hover:bg-gray-100 text-gray-500"><i class="fas fa-chevron-right text-xs"></i></button>
+            </div>
+            <div id="history-calendar-grid" class="grid grid-cols-7 gap-1 text-center text-xs mb-4 shrink-0"></div>
+            <div id="history-date-msgs" class="flex-1 overflow-y-auto min-h-0">
+                <p class="text-center py-4 text-xs text-gray-400">点击有消息的日期查看记录</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ 个人设置弹窗 ══ -->
+    <div id="modal-profile" class="hidden fixed inset-0 z-40 bg-black/30 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="font-semibold text-lg">个人设置</h3>
+                <button onclick="closeProfileModal()" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <!-- 头像预览 -->
+            <div class="flex flex-col items-center mb-5">
+                <div id="profile-avatar-preview" onclick="document.getElementById('avatar-input').click()"
+                    class="w-24 h-24 rounded-full overflow-hidden border-4 border-blue-100 cursor-pointer hover:opacity-80 transition-opacity relative flex items-center justify-center bg-blue-50">
+                    <i class="fas fa-chalkboard-teacher text-blue-300 text-4xl"></i>
+                    <div class="absolute inset-0 bg-black/0 hover:bg-black/10 rounded-full transition-colors flex items-center justify-center">
+                        <i class="fas fa-camera text-white opacity-0 hover:opacity-100 text-xl"></i>
+                    </div>
+                </div>
+                <input id="avatar-input" type="file" accept="image/*" class="hidden">
+                <p class="text-xs text-gray-400 mt-2">点击头像更换图片</p>
+            </div>
+            <!-- 昵称 -->
+            <div class="mb-5">
+                <label class="block text-sm text-gray-600 mb-1">昵称</label>
+                <input id="nickname-input" type="text" placeholder="留空则显示用户名"
+                    class="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-blue-500">
+            </div>
+            <p id="profile-msg" class="text-sm mb-3 min-h-[20px]"></p>
+            <button onclick="saveProfile()"
+                class="w-full py-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-700 font-medium">
+                <i class="fas fa-save mr-1"></i> 保存设置
+            </button>
+        </div>
+    </div>
+
+    <!-- ══ 课程筛选弹窗 ══ -->
+    <div id="modal-course-filter" class="hidden fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4" style="backdrop-filter:blur(2px)">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm max-h-[70vh] flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+                <h3 class="font-semibold text-lg">选择课程</h3>
+                <button onclick="closeCourseFilterModal()" class="text-gray-400 hover:text-gray-600 text-xl w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="modal-course-filter-list" class="overflow-y-auto p-4 grid grid-cols-1 gap-2 flex-1"></div>
+        </div>
+    </div>
+
+    <!-- ══ 群成员列表弹窗 ══ -->
+    <div id="modal-group-members" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-6 w-80 shadow-xl max-h-[70vh] flex flex-col">
+            <div class="flex items-center justify-between mb-4 shrink-0">
+                <h3 class="font-semibold text-gray-800">群成员</h3>
+                <button onclick="closeGroupMembersList()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <div id="group-members-content" class="flex-1 overflow-y-auto min-h-0"></div>
+        </div>
+    </div>
+
+    <!-- ══ 日程弹窗 ══ -->
+    <div id="modal-schedule-day" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-xl w-[480px] max-w-[95vw] max-h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0">
+                <h3 id="schedule-modal-title" class="font-semibold text-gray-800"></h3>
+                <div class="flex items-center gap-2">
+                    <button id="sched-add-btn" onclick="openAddScheduleForm()" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700">+ 添加日程</button>
+                    <button onclick="closeScheduleModal()" class="text-gray-400 hover:text-gray-600 w-7 h-7 flex items-center justify-center"><i class="fas fa-times text-sm"></i></button>
+                </div>
+            </div>
+            <div id="schedule-day-content" class="flex-1 overflow-hidden p-5"></div>
+        </div>
+    </div>
+
+    <!-- ══ 日程表单弹窗 ══ -->
+    <div id="modal-schedule-form" class="hidden fixed inset-0 bg-black/40 z-[60] flex items-center justify-center">
+        <div class="bg-white rounded-2xl shadow-xl w-96 max-w-[95vw]">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <h3 id="schedule-form-title" class="font-semibold text-gray-800">添加日程</h3>
+                <button onclick="closeScheduleForm()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">标题 <span class="text-red-400">*</span></label>
+                    <input id="sched-title-input" type="text" placeholder="日程标题" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">详细内容</label>
+                    <textarea id="sched-content-input" rows="3" placeholder="可填写备注..." class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400 resize-none"></textarea>
+                </div>
+                <div id="sched-public-section" class="hidden pt-1 border-t border-gray-100">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="sched-public-check" onchange="togglePublicScheduleOptions()" class="w-4 h-4 rounded accent-blue-600">
+                        <span class="text-sm text-gray-700">设为公开日程（选课学生可见）</span>
+                    </label>
+                    <div id="sched-course-select-wrapper" class="hidden mt-2">
+                        <select id="sched-course-select" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-blue-400 bg-white">
+                            <option value="">-- 选择关联课程 --</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="px-5 pb-5 flex justify-end gap-2">
+                <button onclick="closeScheduleForm()" class="px-4 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">取消</button>
+                <button onclick="saveSchedule()" class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-medium hover:bg-blue-700">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ 课程成员弹窗 ══ -->
+    <div id="modal-members" class="hidden fixed inset-0 z-40 bg-black/30 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+                <h3 id="members-title" class="font-semibold text-lg">课程成员</h3>
+                <button onclick="closeMembersModal()" class="text-gray-400 hover:text-gray-600 w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="members-content" class="overflow-y-auto p-6 flex-1">
+                <p class="text-gray-400 text-sm text-center py-8">加载中...</p>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="shared.js"></script>
+    <script>
+        const user = JSON.parse(localStorage.getItem('cqa_user') || 'null');
+        if (!user?.token || user.role !== 'teacher') location.href = 'login.html';
+
+        const _navAvatarFallback  = `<i class="fas fa-chalkboard-teacher text-blue-400 text-sm"></i>`;
+        const _lnavAvatarFallback = `<i class="fas fa-chalkboard-teacher text-white text-lg"></i>`;
+
+        let userProfile = { username: user?.username, role: 'teacher', avatar: null, nickname: null };
+        let _pendingAvatar = null;  // base64 预览中但尚未保存的头像
+
+        // ── 头像辅助 ──────────────────────────────────────────────
+        function avatarHtml(avatar, sizeClass = 'w-10 h-10', role = 'teacher') {
+            if (avatar) {
+                return `<img src="${avatar}" class="${sizeClass} rounded-full object-cover border-2 border-white shadow-sm">`;
+            }
+            const isTeacher = role === 'teacher';
+            return `<div class="${sizeClass} ${isTeacher ? 'bg-blue-100 text-blue-500' : 'bg-green-100 text-green-500'} rounded-full flex items-center justify-center">
+                <i class="fas ${isTeacher ? 'fa-chalkboard-teacher' : 'fa-user-graduate'} text-base"></i>
+            </div>`;
+        }
+
+        function displayName(profile) {
+            return profile.nickname?.trim() || profile.username;
+        }
+
+        // ── 加载个人资料 ──────────────────────────────────────────
+        async function loadProfile() {
+            const res = await apiFetch(`${API}/api/auth/me`, { headers: authHeaders(), cache: 'no-store' });
+            if (!res) return;
+            userProfile = await res.json();
+            const _cu = JSON.parse(localStorage.getItem('cqa_user') || '{}');
+            _cu.avatar = userProfile.avatar;
+            _cu.nickname = userProfile.nickname;
+            localStorage.setItem('cqa_user', JSON.stringify(_cu));
+            updateNavIdentity(displayName(userProfile), userProfile.avatar);
+        }
+
+        function switchTab(tab) {
+            ['courses', 'upload', 'history'].forEach(t => {
+                document.getElementById(`content-${t}`).classList.toggle('active', t === tab);
+                document.getElementById(`tab-${t}`).className =
+                    'tab-btn flex-1 py-3 rounded-xl text-sm font-medium transition-all ' +
+                    (t === tab ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50');
+            });
+            if (tab === 'upload' || tab === 'history') populateCourseSelects();
+        }
+
+        // ── 课程列表 ──────────────────────────────────────────────
+        async function loadCourses() {
+            const res = await apiFetch(`${API}/api/courses/`, { headers: authHeaders() });
+            if (!res) return;
+            const data = await res.json();
+            _teacherCourses = data;
+            const list = document.getElementById('courses-list');
+            if (!data.length) { list.innerHTML = '<p class="text-gray-400 text-sm">还没有课程，请先创建</p>'; return; }
+            list.innerHTML = data.map(c => `
+                <div class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0 group">
+                    <div>
+                        <p id="name-${c.course_key}" class="font-medium">${c.name}</p>
+                        <p class="text-sm text-gray-400">课程码：<span class="font-mono bg-gray-100 px-2 py-0.5 rounded">${c.course_key}</span></p>
+                    </div>
+                    <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="openMembersModal('${c.course_key}','${c.name.replace(/'/g,'&#39;')}')"
+                            class="px-3 py-2 text-green-500 hover:bg-green-50 rounded-xl text-sm border border-green-100" title="查看成员">
+                            <i class="fas fa-users"></i>
+                        </button>
+                        <button onclick="openRename('${c.course_key}','${c.name.replace(/'/g,'&#39;')}')"
+                            class="px-3 py-2 text-blue-500 hover:bg-blue-50 rounded-xl text-sm border border-blue-100" title="重命名">
+                            <i class="fas fa-pencil-alt"></i>
+                        </button>
+                        <button onclick="deleteCourse('${c.course_key}','${c.name.replace(/'/g,'&#39;')}')"
+                            class="px-3 py-2 text-red-400 hover:bg-red-50 rounded-xl text-sm border border-red-100" title="删除课程">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>`).join('');
+        }
+
+        async function createCourse() {
+            const name = document.getElementById('course-name').value.trim();
+            const key  = document.getElementById('course-key').value.trim();
+            const msg  = document.getElementById('course-msg');
+            if (!name || !key) { msg.className = 'text-sm mt-2 text-red-500'; msg.textContent = '请填写课程名称和课程码'; return; }
+            const res = await apiFetch(`${API}/api/courses/`, {
+                method: 'POST', headers: authHeaders(),
+                body: JSON.stringify({ name, course_key: key })
+            });
+            if (!res) return;
+            const data = await res.json();
+            if (!res.ok) { msg.className = 'text-sm mt-2 text-red-500'; msg.textContent = data.detail; return; }
+            msg.className = 'text-sm mt-2 text-green-600';
+            msg.textContent = `✅ 课程"${name}"创建成功！课程码：${key}`;
+            document.getElementById('course-name').value = '';
+            document.getElementById('course-key').value = '';
+            loadCourses();
+        }
+
+        let _renameKey = '';
+        function openRename(key, currentName) {
+            _renameKey = key;
+            document.getElementById('rename-input').value = currentName;
+            document.getElementById('modal-rename').classList.remove('hidden');
+            setTimeout(() => document.getElementById('rename-input').focus(), 50);
+        }
+        function closeRename() { document.getElementById('modal-rename').classList.add('hidden'); _renameKey = ''; }
+        async function confirmRename() {
+            const newName = document.getElementById('rename-input').value.trim();
+            if (!newName) return;
+            const res = await apiFetch(`${API}/api/courses/${_renameKey}`, {
+                method: 'PATCH', headers: authHeaders(),
+                body: JSON.stringify({ name: newName })
+            });
+            if (!res) return;
+            closeRename();
+            loadCourses();
+        }
+
+        async function deleteCourse(key, name) {
+            if (!confirm(`删除课程"${name}"（${key}）？\n\n⚠️ 会同时删除所有向量数据和上传文件，无法恢复。`)) return;
+            const res = await apiFetch(`${API}/api/courses/${key}`, {
+                method: 'DELETE', headers: authHeaders()
+            });
+            if (!res) return;
+            loadCourses();
+        }
+
+        // ── 课程成员 ──────────────────────────────────────────────
+        let _membersKey = '';
+        function openMembersModal(courseKey, courseName) {
+            _membersKey = courseKey;
+            document.getElementById('members-title').textContent = `课程成员 · ${courseName}`;
+            document.getElementById('members-content').innerHTML =
+                '<p class="text-gray-400 text-sm text-center py-8">加载中...</p>';
+            document.getElementById('modal-members').classList.remove('hidden');
+            loadMembers(courseKey);
+        }
+        function closeMembersModal() { document.getElementById('modal-members').classList.add('hidden'); }
+
+        async function loadMembers(courseKey) {
+            const res = await apiFetch(`${API}/api/courses/${courseKey}/students`, { headers: authHeaders() });
+            if (!res) return;
+            const data = await res.json();
+            const content = document.getElementById('members-content');
+            if (!data.length) {
+                content.innerHTML = `
+                    <div class="text-center py-12 text-gray-400">
+                        <i class="fas fa-user-graduate text-4xl mb-3 block"></i>
+                        <p>还没有学生加入这门课程</p>
+                        <p class="text-sm mt-1">学生使用课程码加入后将出现在此处</p>
+                    </div>`;
+                return;
+            }
+            content.innerHTML = `
+                <p class="text-sm text-gray-500 mb-4">共 ${data.length} 名学生</p>
+                <div class="grid grid-cols-3 gap-3">
+                    ${data.map(m => `
+                        <div class="flex flex-col items-center py-4 px-3 bg-gray-50 rounded-2xl">
+                            ${avatarHtml(m.avatar, 'w-14 h-14', 'student')}
+                            <p class="font-medium text-sm mt-2 text-center truncate w-full text-gray-800">
+                                ${m.nickname?.trim() || m.username}
+                            </p>
+                            ${m.nickname?.trim() ? `<p class="text-xs text-gray-400 truncate w-full text-center">${m.username}</p>` : ''}
+                            <p class="text-xs text-gray-400 mt-1">${m.joined_at?.slice(0,10) || ''}</p>
+                            <button onclick="closeMembersModal();openSidebar();openConversation(${m.id},'${(m.nickname?.trim()||m.username).replace(/'/g,'&#39;')}')"
+                                class="mt-2 px-3 py-1 bg-blue-50 text-blue-600 text-xs rounded-lg hover:bg-blue-100 border border-blue-100">
+                                <i class="fas fa-envelope text-xs mr-1"></i>发消息
+                            </button>
+                        </div>`).join('')}
+                </div>`;
+        }
+
+        // ── 教材管理 ──────────────────────────────────────────────
+        async function populateCourseSelects() {
+            const res = await apiFetch(`${API}/api/courses/`, { headers: authHeaders() });
+            if (!res) return;
+            const data = await res.json();
+            const options = data.map(c => `<option value="${c.course_key}">${c.name}（${c.course_key}）</option>`).join('');
+            document.getElementById('upload-course-select').innerHTML = '<option value="">-- 请先选择课程 --</option>' + options;
+            document.getElementById('history-course-select').innerHTML = '<option value="">-- 选择课程 --</option>' + options;
+            // 若上传 tab 已选中课程，刷新文档列表
+            const selected = document.getElementById('upload-course-select').value;
+            if (selected) loadDocuments(selected);
+        }
+
+        async function loadDocuments(courseKey) {
+            const docList = document.getElementById('doc-list');
+            if (!courseKey) { docList.innerHTML = '<p class="text-gray-400 text-sm">请先选择课程</p>'; return; }
+            docList.innerHTML = '<p class="text-gray-400 text-sm">加载中...</p>';
+            const res = await apiFetch(`${API}/api/documents/${courseKey}`, { headers: authHeaders() });
+            if (!res) return;
+            const data = await res.json();
+            if (!data.length) {
+                docList.innerHTML = '<p class="text-gray-400 text-sm">该课程还没有上传任何文档</p>';
+                return;
+            }
+            docList.innerHTML = data.map(doc => `
+                <div id="doc-${CSS.escape(doc.filename)}" class="flex items-center justify-between py-3 border-b border-gray-100 last:border-0 group">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 bg-red-50 text-red-400 rounded-xl flex items-center justify-center shrink-0">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-medium text-sm truncate text-gray-800" title="${doc.display_name}">${doc.display_name}</p>
+                            <p class="text-xs text-gray-400">${formatSize(doc.size)}</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 shrink-0 ml-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onclick="openPdf('${doc.filename.replace(/'/g,"&#39;")}','${doc.display_name.replace(/'/g,"&#39;")}')"
+                            class="px-3 py-2 text-blue-400 hover:bg-blue-50 rounded-xl text-sm border border-blue-100">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="deleteDocument('${courseKey}','${doc.filename.replace(/'/g,"&#39;")}')"
+                            class="px-3 py-2 text-red-400 hover:bg-red-50 rounded-xl text-sm border border-red-100">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>`).join('');
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        async function deleteDocument(courseKey, filename) {
+            const displayName = filename.slice(courseKey.length + 1);
+            if (!confirm(`删除文档《${displayName}》？\n\n该文档的所有向量数据也会一并删除，无法恢复。`)) return;
+            const res = await apiFetch(
+                `${API}/api/documents/${courseKey}?filename=${encodeURIComponent(filename)}`,
+                { method: 'DELETE', headers: authHeaders() }
+            );
+            if (!res) return;
+            loadDocuments(courseKey);
+        }
+
+        document.getElementById('file-input').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const courseId = document.getElementById('upload-course-select').value;
+            if (!courseId) { alert('请先选择课程'); return; }
+
+            const statusEl = document.getElementById('upload-status');
+            const progressWrap = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('upload-progress-bar');
+
+            statusEl.textContent = `📤 正在上传 ${file.name}...`;
+            statusEl.className = 'mt-3 text-sm text-gray-500';
+            progressWrap.classList.remove('hidden');
+            progressBar.style.width = '0%';
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('course_id', courseId);
+
+            let res;
+            try {
+                res = await fetch(`${API}/api/upload`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${user.token}` },
+                    body: formData,
+                });
+            } catch {
+                statusEl.className = 'mt-3 text-sm text-red-500';
+                statusEl.textContent = '❌ 网络错误，请重试';
+                progressWrap.classList.add('hidden');
+                e.target.value = '';
+                return;
+            }
+            if (res.status === 401) { localStorage.removeItem('cqa_user'); location.href = 'login.html'; return; }
+            if (!res.ok) {
+                statusEl.className = 'mt-3 text-sm text-red-500';
+                statusEl.textContent = '❌ 上传失败';
+                progressWrap.classList.add('hidden');
+                e.target.value = '';
+                return;
+            }
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let totalPages = 0;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                let idx;
+                while ((idx = buffer.indexOf('\n\n')) !== -1) {
+                    const block = buffer.slice(0, idx);
+                    buffer = buffer.slice(idx + 2);
+                    for (const line of block.split('\n')) {
+                        if (!line.startsWith('data: ')) continue;
+                        let evt;
+                        try { evt = JSON.parse(line.slice(6)); } catch { continue; }
+                        if (evt.type === 'start') {
+                            totalPages = evt.total;
+                            statusEl.textContent = `📄 开始处理《${evt.filename}》，共 ${totalPages} 页...`;
+                        } else if (evt.type === 'progress') {
+                            const pct = totalPages > 0 ? Math.round(evt.current / totalPages * 100) : 0;
+                            progressBar.style.width = pct + '%';
+                            statusEl.textContent = `⚙️ 正在提取第 ${evt.current} 页 / 共 ${totalPages} 页...`;
+                        } else if (evt.type === 'vectorizing') {
+                            progressBar.style.width = '0%';
+                            statusEl.textContent = `🧠 正在向量化，共 ${evt.total} 个文本块...`;
+                        } else if (evt.type === 'embed_progress') {
+                            const pct = evt.total > 0 ? Math.round(evt.done / evt.total * 100) : 100;
+                            progressBar.style.width = pct + '%';
+                            statusEl.textContent = `🧠 向量化中... ${evt.done} / ${evt.total} 块`;
+                        } else if (evt.type === 'done') {
+                            progressBar.style.width = '100%';
+                            statusEl.className = 'mt-3 text-sm text-green-600';
+                            statusEl.textContent = evt.message;
+                            setTimeout(() => progressWrap.classList.add('hidden'), 2000);
+                            loadDocuments(courseId);
+                        } else if (evt.type === 'error') {
+                            statusEl.className = 'mt-3 text-sm text-red-500';
+                            statusEl.textContent = evt.message;
+                            progressWrap.classList.add('hidden');
+                        }
+                    }
+                }
+            }
+            e.target.value = '';
+        });
+
+        // ── 提问记录 ──────────────────────────────────────────────
+        async function loadHistory() {
+            const key  = document.getElementById('history-course-select').value;
+            const list = document.getElementById('history-list');
+            if (!key) { list.innerHTML = '<p class="text-gray-400 text-sm">请先选择课程</p>'; return; }
+            list.innerHTML = '<p class="text-gray-400 text-sm">加载中...</p>';
+            const res = await apiFetch(`${API}/api/history/${key}`, { headers: authHeaders() });
+            if (!res) return;
+            const data = await res.json();
+            renderHistoryList(data);
+        }
+
+        function renderHistoryList(data) {
+            const list = document.getElementById('history-list');
+            if (!data.length) { list.innerHTML = '<p class="text-gray-400 text-sm">该课程暂无提问记录</p>'; return; }
+            const byDate = {};
+            data.forEach(r => { const d = (r.created_at||'').slice(0,10) || '未知日期'; (byDate[d] = byDate[d]||[]).push(r); });
+            list.innerHTML = Object.entries(byDate).map(([date, logs]) => `
+                <div class="mb-4">
+                    <div class="flex items-center gap-3 mb-2 px-1">
+                        <span class="text-xs font-medium text-gray-400">${date}</span>
+                        <div class="flex-1 h-px bg-gray-100"></div>
+                    </div>
+                    ${logs.map(r => `
+                    <div id="log-${r.id}" class="border border-gray-100 rounded-2xl p-4 mb-2 group">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-blue-700">👤 ${r.student_name}</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-400">${(r.created_at||'').slice(11,16)}</span>
+                                <button onclick="deleteLog(${r.id})"
+                                    class="text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-gray-800 font-medium mb-1">❓ ${r.question}</p>
+                        ${r.answer ? `<p class="text-gray-600 text-sm bg-blue-50 rounded-xl p-3 mt-2 leading-relaxed">💡 ${r.answer}</p>` : ''}
+                    </div>`).join('')}
+                </div>`).join('');
+        }
+
+        async function deleteLog(id) {
+            if (!confirm('删除这条提问记录？')) return;
+            const res = await apiFetch(`${API}/api/history/log/${id}`, {
+                method: 'DELETE', headers: authHeaders()
+            });
+            if (!res) return;
+            document.getElementById(`log-${id}`)?.remove();
+        }
+
+        // ── 个人设置 ──────────────────────────────────────────────
+        function openProfileModal() {
+            _pendingAvatar = null;
+            document.getElementById('nickname-input').value = userProfile.nickname || '';
+            document.getElementById('profile-msg').textContent = '';
+            // 设置头像预览
+            const preview = document.getElementById('profile-avatar-preview');
+            preview.innerHTML = userProfile.avatar
+                ? `<img src="${userProfile.avatar}" class="w-full h-full object-cover rounded-full">`
+                : `<i class="fas fa-chalkboard-teacher text-blue-300 text-4xl"></i>`;
+            document.getElementById('modal-profile').classList.remove('hidden');
+        }
+        document.getElementById('avatar-input').addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                _pendingAvatar = await resizeImageToBase64(file, 200);
+                const preview = document.getElementById('profile-avatar-preview');
+                preview.innerHTML = `<img src="${_pendingAvatar}" class="w-full h-full object-cover rounded-full">`;
+            } catch {
+                document.getElementById('profile-msg').textContent = '图片读取失败，请重试';
+            }
+            e.target.value = '';
+        });
+
+        async function saveProfile() {
+            const nickname = document.getElementById('nickname-input').value.trim() || null;
+            const body = { nickname };
+            if (_pendingAvatar !== null) body.avatar = _pendingAvatar;
+            const res = await apiFetch(`${API}/api/auth/profile`, {
+                method: 'PUT', headers: authHeaders(),
+                body: JSON.stringify(body)
+            });
+            if (!res) return;
+            const msg = document.getElementById('profile-msg');
+            if (!res.ok) { msg.className = 'text-sm mb-3 text-red-500'; msg.textContent = '保存失败'; return; }
+            if (body.avatar !== undefined) userProfile.avatar = body.avatar;
+            userProfile.nickname = nickname;
+            msg.className = 'text-sm mb-3 text-green-600';
+            msg.textContent = '✅ 已保存';
+            updateNavIdentity(displayName(userProfile), userProfile.avatar);
+            setTimeout(closeProfileModal, 800);
+        }
+
+        async function confirmDeleteAccount() {
+            if (!confirm('确认注销账号？\n\n此操作不可恢复，您的账号及所有相关课程数据将被永久删除。')) return;
+            const res = await apiFetch(`${API}/api/auth/account`, { method: 'DELETE', headers: authHeaders() });
+            if (!res) return;
+            if (!res.ok) { alert('注销失败，请重试'); return; }
+            localStorage.removeItem('cqa_user');
+            location.href = 'login.html';
+        }
+
+        // ── PDF 预览 ──────────────────────────────────────────────
+        function openPdf(filename, displayName) {
+            const url = `${API}/pdfs/${encodeURIComponent(filename)}`;
+            document.getElementById('pdf-modal-title').textContent = displayName;
+            const embed = document.getElementById('pdf-embed');
+            embed.src = '';
+            requestAnimationFrame(() => { embed.src = url; });
+            document.getElementById('modal-pdf').classList.remove('hidden');
+        }
+        function closePdf() {
+            document.getElementById('modal-pdf').classList.add('hidden');
+            document.getElementById('pdf-embed').src = '';
+        }
+
+        // ── 左导航栏 ──────────────────────────────────────────────
+        let _navCollapsed = false;
+        let _activePage = 'courses';
+        let _lastUnreadCount = -1;
+        let _msgPollTimer = null;
+        let _currentConvUserId = null;
+        let _currentConvUserName = null;
+        let _currentGroupId = null;
+        let _currentGroupName = null;
+        let _notesFilterKey = null;
+        let _allPublicNotes = [];
+        let _teacherCourses = [];
+
+        function navigateTo(page) {
+            _activePage = page;
+            ['msgs', 'notes', 'settings'].forEach(p => document.getElementById(`page-${p}`)?.classList.add('hidden'));
+            if (page === 'courses') {
+                document.getElementById('page-courses').classList.remove('hidden');
+                refreshCalendar();
+            } else {
+                document.getElementById('page-courses').classList.add('hidden');
+                document.getElementById(`page-${page}`).classList.remove('hidden');
+                if (page === 'msgs') { loadConversations(); }
+                else if (page === 'notes') loadPublicNotes();
+                else if (page === 'settings') loadProfile().then(loadSettingsPage);
+            }
+            ['courses', 'msgs', 'notes', 'settings'].forEach(p => {
+                const btn = document.getElementById(`lnav-${p}-btn`);
+                if (!btn) return;
+                btn.classList.toggle('bg-white/20', p === page);
+                btn.classList.toggle('text-white', p === page);
+                btn.classList.toggle('text-white/70', p !== page);
+            });
+        }
+
+        // ── 消息 ──────────────────────────────────────────────────
+        async function loadConversations() {
+            const listEl = document.getElementById('conversations-list');
+            listEl.innerHTML = '<p class="text-gray-400 text-xs text-center py-4">加载中...</p>';
+            try {
+                const res = await apiFetch(`${API}/api/messages/conversations`, { headers: authHeaders() });
+                if (!res) return;
+                const data = await res.json();
+                renderConversations(data);
+            } catch {}
+        }
+
+        // ── 学生公开笔记 ──────────────────────────────────────────
+        async function loadPublicNotes() {
+            const gridEl = document.getElementById('public-notes-grid');
+            if (!gridEl) return;
+            gridEl.innerHTML = '<p class="col-span-full text-gray-400 text-sm text-center py-12">加载中...</p>';
+            try {
+                const res = await apiFetch(`${API}/api/notes/public`, { headers: authHeaders() });
+                if (!res) return;
+                _allPublicNotes = await res.json();
+                applyPublicNotesFilter();
+            } catch {}
+        }
+
+        function applyPublicNotesFilter() {
+            const notes = _notesFilterKey
+                ? _allPublicNotes.filter(n => n.course_key === _notesFilterKey)
+                : _allPublicNotes;
+            renderPublicNotes(notes);
+        }
+
+        async function buildTeacherNotesFilterDropdown() {
+            if (!_teacherCourses.length) {
+                const res = await apiFetch(`${API}/api/courses/`, { headers: authHeaders() });
+                if (res) _teacherCourses = await res.json();
+            }
+            const list = document.getElementById('notes-filter-list');
+            if (!list) return;
+            const MAX_SHOW = 10;
+            const hasMore = _teacherCourses.length > MAX_SHOW;
+            const shown = _teacherCourses.slice(0, MAX_SHOW);
+            const check = key => key === _notesFilterKey
+                ? '<i class="fas fa-check text-blue-500 text-xs shrink-0"></i>' : '';
+            list.innerHTML = `
+                <div onclick="selectNotesFilter(null,'全部')" class="px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center justify-between rounded-xl mx-1">
+                    <span>全部</span>${check(null)}
+                </div>
+                ${shown.map(c => `
+                <div onclick="selectNotesFilter('${c.course_key}','${c.name.replace(/'/g,'&#39;')}')"
+                    class="px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center justify-between rounded-xl mx-1">
+                    <span class="truncate mr-2">${c.name}</span>${check(c.course_key)}
+                </div>`).join('')}
+                ${hasMore ? `<div onclick="openCourseFilterModal()"
+                    class="px-4 py-2.5 text-sm text-blue-500 hover:bg-blue-50 cursor-pointer flex items-center gap-2 rounded-xl mx-1 border-t border-gray-100 mt-1 pt-3">
+                    <i class="fas fa-ellipsis-h text-xs"></i> 更多课程
+                </div>` : ''}`;
+        }
+
+        async function toggleNotesFilter() {
+            const dd = document.getElementById('notes-filter-dropdown');
+            if (dd.classList.contains('hidden')) {
+                await buildTeacherNotesFilterDropdown();
+                dd.classList.remove('hidden');
+            } else {
+                dd.classList.add('hidden');
+            }
+        }
+
+        function selectNotesFilter(key, name) {
+            _notesFilterKey = key;
+            const labelEl = document.getElementById('notes-filter-label');
+            if (labelEl) labelEl.textContent = name;
+            document.getElementById('notes-filter-dropdown')?.classList.add('hidden');
+            document.getElementById('modal-course-filter')?.classList.add('hidden');
+            applyPublicNotesFilter();
+        }
+
+        async function openCourseFilterModal() {
+            document.getElementById('notes-filter-dropdown')?.classList.add('hidden');
+            if (!_teacherCourses.length) {
+                const res = await apiFetch(`${API}/api/courses/`, { headers: authHeaders() });
+                if (res) _teacherCourses = await res.json();
+            }
+            const list = document.getElementById('modal-course-filter-list');
+            if (!list) return;
+            const sel = key => _notesFilterKey === key
+                ? 'border-blue-400 bg-blue-50 text-blue-700 font-medium'
+                : 'border-gray-200 hover:border-blue-300 text-gray-700';
+            list.innerHTML = `
+                <div onclick="selectNotesFilter(null,'全部')" class="p-3 rounded-xl border-2 cursor-pointer text-sm ${sel(null)}">全部</div>
+                ${_teacherCourses.map(c => `
+                <div onclick="selectNotesFilter('${c.course_key}','${c.name.replace(/'/g,'&#39;')}')"
+                    class="p-3 rounded-xl border-2 cursor-pointer text-sm ${sel(c.course_key)}">${c.name}</div>`).join('')}`;
+            document.getElementById('modal-course-filter').classList.remove('hidden');
+        }
+
+        function renderPublicNotes(notes) {
+            const gridEl = document.getElementById('public-notes-grid');
+            if (!gridEl) return;
+            const countEl = document.getElementById('notes-count-text');
+            if (countEl) countEl.textContent = notes.length ? `共 ${notes.length} 条公开笔记` : '暂无公开笔记';
+            if (!notes.length) {
+                gridEl.innerHTML = `
+                    <div class="col-span-full text-center py-16 text-gray-400">
+                        <i class="fas fa-book-open text-5xl mb-4 block text-gray-200"></i>
+                        <p class="text-base font-medium text-gray-500">暂无公开笔记</p>
+                        <p class="text-sm mt-1">学生将笔记设为公开后将在此显示</p>
+                    </div>`;
+                return;
+            }
+            gridEl.innerHTML = notes.map((n, i) => {
+                const docLabel = n.doc_name === 'AI问答归整'
+                    ? '✨ AI问答归整'
+                    : `${n.doc_name.replace(/^[^_]+_/, '')} · 第${n.page_num}页`;
+                const color = NOTE_COLORS[i % NOTE_COLORS.length];
+                const studentName = n.student_nickname?.trim() || n.student_name;
+                return `
+                <div class="bg-white rounded-2xl shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                    <div class="h-1.5 bg-gradient-to-r ${color}"></div>
+                    <div class="p-4 flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-7 h-7 bg-green-100 text-green-600 rounded-full flex items-center justify-center shrink-0">
+                                <i class="fas fa-user-graduate text-xs"></i>
+                            </div>
+                            <span class="text-sm font-medium text-gray-800 truncate">${studentName}</span>
+                            <span class="ml-auto text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-lg shrink-0 truncate max-w-[45%]">${docLabel}</span>
+                        </div>
+                        <div class="flex items-center gap-2 mb-1.5">
+                            ${n.title ? `<p class="text-sm font-semibold text-gray-800 truncate flex-1">${n.title}</p>` : '<span class="flex-1"></span>'}
+                            ${n.is_ai ? `<span class="shrink-0 text-xs px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded font-medium flex items-center gap-0.5"><i class="fas fa-robot text-[9px]"></i> AI</span>` : ''}
+                        </div>
+                        <p class="text-sm text-gray-700 leading-relaxed" style="-webkit-line-clamp:4;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden">${n.content}</p>
+                    </div>
+                    <div class="px-4 py-3 border-t border-gray-100">
+                        <div class="flex items-center gap-2">
+                            <input type="text" id="comment-input-${n.id}" placeholder="添加评论..."
+                                class="flex-1 text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-400 bg-gray-50">
+                            <button onclick="submitComment(${n.id})"
+                                class="text-xs px-3 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 whitespace-nowrap font-medium">回复</button>
+                        </div>
+                        <button onclick="loadTeacherNoteComments(${n.id})" class="text-xs text-blue-500 hover:text-blue-700 mt-2 flex items-center gap-1">
+                            <i class="fas fa-comment-alt text-xs"></i> 查看评论
+                        </button>
+                        <div id="tnotes-comments-${n.id}" class="hidden mt-2 space-y-1.5"></div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function loadTeacherNoteComments(noteId) {
+            const el = document.getElementById(`tnotes-comments-${noteId}`);
+            if (!el) return;
+            if (!el.classList.contains('hidden') && el.dataset.loaded) {
+                el.classList.add('hidden');
+                return;
+            }
+            el.classList.remove('hidden');
+            el.innerHTML = '<p class="text-xs text-gray-400 text-center py-1">加载中...</p>';
+            try {
+                const res = await apiFetch(`${API}/api/notes/${noteId}/comments`, { headers: authHeaders() });
+                if (!res) return;
+                const comments = await res.json();
+                el.dataset.loaded = '1';
+                el.innerHTML = comments.length
+                    ? comments.map(c => `
+                        <div class="text-xs text-gray-600 bg-blue-50 rounded-lg px-3 py-1.5">
+                            <span class="font-medium text-blue-700">${c.teacher_nickname?.trim()||c.teacher_name}</span>：${c.content}
+                        </div>`).join('')
+                    : '<p class="text-xs text-gray-400">暂无评论</p>';
+            } catch {}
+        }
+
+        async function submitComment(noteId) {
+            const input = document.getElementById(`comment-input-${noteId}`);
+            const content = input?.value.trim();
+            if (!content) return;
+            input.value = '';
+            try {
+                await apiFetch(`${API}/api/notes/${noteId}/comments`, {
+                    method: 'POST', headers: authHeaders(),
+                    body: JSON.stringify({ content })
+                });
+                loadTeacherNoteComments(noteId);
+            } catch {}
+        }
+
+        // ── 键盘 / 背景点击关闭 ──────────────────────────────────
+        document.getElementById('rename-input').addEventListener('keypress', e => { if (e.key === 'Enter') confirmRename(); });
+        document.getElementById('modal-pdf').addEventListener('click', e => { if (e.target === e.currentTarget) closePdf(); });
+        document.getElementById('modal-course-filter').addEventListener('click', e => { if (e.target === e.currentTarget) closeCourseFilterModal(); });
+        document.addEventListener('click', e => {
+            const wrap = document.getElementById('notes-filter-wrap');
+            if (wrap && !wrap.contains(e.target)) document.getElementById('notes-filter-dropdown')?.classList.add('hidden');
+        });
+        document.getElementById('modal-partner-profile').addEventListener('click', e => { if (e.target === e.currentTarget) closePartnerProfile(); });
+        document.getElementById('modal-history-picker').addEventListener('click', e => { if (e.target === e.currentTarget) closeHistoryPicker(); });
+        document.getElementById('modal-group-members').addEventListener('click', e => { if (e.target === e.currentTarget) closeGroupMembersList(); });
+        document.getElementById('modal-schedule-day').addEventListener('click', e => { if (e.target === e.currentTarget) closeScheduleModal(); });
+        ['modal-rename', 'modal-profile', 'modal-members'].forEach(id => {
+            document.getElementById(id).addEventListener('click', e => {
+                if (e.target === e.currentTarget) {
+                    if (id === 'modal-rename') closeRename();
+                    else if (id === 'modal-profile') closeProfileModal();
+                    else closeMembersModal();
+                }
+            });
+        });
+        document.getElementById('msg-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendMessage(); }
+        });
+        document.getElementById('msg-input').addEventListener('input', e => {
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+        });
+        document.getElementById('group-msg-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendGroupMessage(); }
+        });
+        document.getElementById('group-msg-input').addEventListener('input', e => {
+            e.target.style.height = 'auto';
+            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+        });
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#conv-menu-btn') && !e.target.closest('#conv-menu-dropdown')) closeConvMenu();
+            if (!e.target.closest('#group-menu-btn') && !e.target.closest('#group-menu-dropdown')) closeGroupMenu();
+        });
+
+        // ── 初始化 ────────────────────────────────────────────────
+        loadSavedTheme();
+        loadSavedDark();
+        updateNavIdentity(user?.nickname?.trim() || user?.username || '', user?.avatar || null);
+        loadProfile();
+        loadCourses();
+        initCalendar();
+        checkScheduleNotifications();
+        startMsgPoll();
+    </script>
+</body>
+</html>

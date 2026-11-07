@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-multipart
+pdfplumber
+pymupdf
+rapidocr-onnxruntime
+chromadb
+rank-bm25
+sentence-transformers
+langchain
+langchain-community
+pydantic
+langchain-text-splitters
+openai
+python-dotenv
