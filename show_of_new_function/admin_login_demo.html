@@ -257,7 +257,11 @@
 
     <script>
         // ── Mock 数据 ──
-        const MOCK_ADMIN = { username: 'admin', password: 'admin888' };
+        // 仅用于前端交互演示，不具备真实身份认证能力
+            const MOCK_ADMIN = {
+                username: 'demo',
+                password: 'demo123'
+            };
 
         // ── 验证码逻辑 ──
         const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
